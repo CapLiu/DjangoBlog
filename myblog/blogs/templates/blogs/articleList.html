@@ -1,0 +1,20 @@
+{% extends "blogManageTemplate.html" %}
+{% block content %}
+<div id="content" class="list">
+{% if blogList %}
+	<ul>
+	{% for blog in blogList %}
+		<div class="articlelist">
+		<a href="{% url 'blogs:content' blog.id %}">{{ blog.title }}</a>-<a href="{% url 'users:userIndex' blog.auther.username %}">{{ blog.auther }}</a>
+		<div class="articlelistinfo">
+		<span title="阅读次数">阅读 {{ blog.readcount }}</span>
+		<span title="创建时间">{{ blog.createdate|date:"Y-m-d H:i:s" }}</span>
+		</div>
+		</div>
+	{% endfor %}
+	</ul>
+{% else %}
+	<p>No blogs</p>
+{% endif %}
+</div>
+{% endblock %}

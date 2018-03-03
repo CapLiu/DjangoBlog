@@ -1,0 +1,72 @@
+{% extends "blogTemplate.html" %}
+{% block content %}
+<div class="content">
+<form action="{% url 'blogs:addblog' %}" method="post">
+{% csrf_token %}
+{{ form.as_p }}
+<input type="submit" value="保存并提交">
+<input type="button" id="saveDraft" value="保存到草稿">
+<div id="tip" >
+</div>
+</form>
+</div>
+<script>
+    CKEDITOR.replace('blogcontent',{uiColor:'#9AB8F3'});
+</script>
+<script>
+$("#saveDraft").click(function(){
+    var blogContent = "";
+    try
+    {
+        blogContent = CKEDITOR.instances.id_content.getData();
+    }
+    catch(ex){}
+    $.post("{% url 'blogs:saveDraft' %}",
+    {
+        title:$("#id_title").val(),
+        category:$("#id_category").val(),
+        content:blogContent,
+        csrfmiddlewaretoken:'{{ csrf_token }}'
+    },
+    function(data,status)
+    {
+        var mydate = new Date();
+        
+        $("#tip").html("<p>文章已存为草稿于"+mydate.toLocaleString()+"</p>");
+        $("#tip").show();
+        $("#tip").delay(5000).hide(0);
+    });
+});
+</script>
+<script>
+function saveDraft(){
+    var blogContent = "";
+    try
+    {
+        blogContent = CKEDITOR.instances.id_content.getData();
+    }
+    catch(ex){}
+    $.post("{% url 'blogs:saveDraft' %}",
+    {
+        title:$("#id_title").val(),
+        category:$("#id_category").val(),
+        content:blogContent,
+        csrfmiddlewaretoken:'{{ csrf_token }}'
+    },
+    function(data,status)
+    {
+        var mydate = new Date();
+        $("#tip").html("<p>文章已存为草稿于"+mydate.toLocaleString()+"</p>");
+    });
+}
+setInterval(saveDraft,60000);
+</script>
+<script>
+$(document).ready(function(){
+    $("#id_title").val('{{ title }}');
+    $("#id_category").val('{{ category }}');
+    $("#id_content").val('{{ content|safe }}');
+});
+</script>
+</div>
+{% endblock %}

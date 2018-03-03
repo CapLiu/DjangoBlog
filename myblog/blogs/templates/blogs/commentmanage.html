@@ -1,0 +1,46 @@
+{% extends "blogManageTemplate.html" %}
+{% block content %}
+<div id="content" class="list">
+<table>
+<tr>
+<td>标题</td>
+<td>            </td>
+<td>作者</td>
+<td>    </td>
+<td>时间</td>
+<td>    </td>
+<td>操作</td>
+</tr>
+{% if commentList %}
+	{% for comment in commentList %}
+            {% for realcomment in comment %}
+                <tr>
+                <td><a href="{% url 'blogs:content' blog.id %}">{{ realcomment.attachedblog.title }}</a>   ({{ realcomment.attachedblog.createdate|date:"Y-m-d H:i:s" }})<br>
+                {{ realcomment.content }}
+                </td>
+                <td>            </td>
+                <td>{{ realcomment.auther.username }}</td>
+                <td>    </td>
+                <td>{{ realcomment.createtime }}</td>
+                <td>    </td>
+                <td><span><a href="javascript:void(0);" onClick="deleteConfirm('{{ realcomment.id }}')">删除</a></span>
+                </tr>
+            {% endfor %}
+	{% endfor %}
+{% else %}
+	<p>No comments</p>
+{% endif %}
+</table>
+</div>
+<script>
+function deleteConfirm(id)
+{
+    var commentid = id;
+    var url_mask = "{% url 'blogs:deleteComment' 'tmpId' %}".replace('tmpId',commentid);
+    if(confirm("确认删除该评论吗？"))
+    {
+        location.href = url_mask;
+    }
+}
+</script>
+{% endblock %}

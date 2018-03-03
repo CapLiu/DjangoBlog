@@ -1,0 +1,9 @@
+{% extends "userTemplate.html" %}
+{% block content %}
+<h3>新用户注册</h3>
+<form action="{% url 'users:userregister' %}" method="post" enctype="multipart/form-data">
+{% csrf_token %}
+{{ form.as_p }}
+<p><input type="submit" value="提交"></p>
+</form>
+{% endblock %}

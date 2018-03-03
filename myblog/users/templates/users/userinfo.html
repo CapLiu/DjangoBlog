@@ -1,0 +1,10 @@
+{% extends "userTemplate.html" %}
+{% block content %}
+<div>
+<h3>用户{{ username }}资料</h3>
+<p>用户名: {{ username }}</p>
+<p>注册时间: {{ registertime|date:"Y-m-d" }}</p>
+<p>生日: {{ birthday|date:"Y-m-d H:i:s" }}</p>
+<p>电子邮件: {{ email }}</p>
+</div>
+{% endblock %}

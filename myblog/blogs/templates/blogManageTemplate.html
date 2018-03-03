@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+	<script type="text/javascript" src="/static/ckeditor/ckeditor-init.js" data-ckeditor-basepath="/static/ckeditor/ckeditor/" id="ckeditor-init-script"></script>
+    <script type="text/javascript" src="/static/ckeditor/ckeditor/ckeditor.js"></script>
+    <script type="text/javascript" src="/static/js/jquery-3.2.1.min.js"></script>
+    <title>Cap_Liu的博客</title>
+</head>
+<style type="text/css">
+    body{
+        color: #efd;
+        background: #F3F8C5;
+        margin:7px;
+    }
+    h1{
+        padding: 2em;
+        background: #675;
+    }
+    h2{
+        color: #000000;
+        margin-top:2em;
+		text-align: center;
+    }
+    p{
+        margin:1em 0;
+    }
+	.introduce{
+		color: #000000;
+		margin-left: auto;
+		margin-right: 85%;
+	}
+	.list{
+		color: #000000;
+	}
+	.nav{
+		color: #000000;
+		top: -20px;
+		text-align: center;
+                font-size: 1.5em;
+                background:#EEEEEE;
+	}
+	.content{
+	    color: #000000;
+	    top: -1.25em;
+	}
+	.content p{
+		text-indent: 5em;
+	}
+        .articlelist{
+           color:#000000;
+           font-size:1.25em;
+           top:1.25em;
+        }
+	.comment{
+		color: #000000;
+	}
+	.comment h4{
+		color: #000000;
+		font-weight: bold;
+	}
+	.comment p{
+		color: #000000;
+	}
+	ul li{
+		list-style: none;
+	}
+	
+	
+</style>
+<body>
+<h1>Cap_Liu的博客</h1>
+<div class="introduce">
+{{ test }}
+</div>
+<div class="nav">
+<span><a href="{% url 'index' %}">首页</a></span>
+<span><a href="{% url 'blogs:articlelist' %}">文章列表</a></span>
+<span><a href="{% url 'blogs:blogmanage' %}">博客管理</a></span>
+<span><a href="{% url 'blogs:commentmanage' %}">评论管理</a></span>
+<span>类别管理</span>
+<span><a href="{% url 'blogs:draftmanage' %}">草稿箱</a></span>
+</div>
+<div class="content">
+{% block content %}
+{% endblock %}
+</div>
+<div class="content">
+{% block comment %}
+{% endblock %}
+</div>
+
+
+</body>
+</html>

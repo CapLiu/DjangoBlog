@@ -1,0 +1,53 @@
+{% extends "blogTemplate.html" %}
+{% block content %}
+<div class="content">
+<h2>{{ blog_title }}</h2>
+{{ content|safe }}
+</div>
+<p><a href="{% url 'index' %}">返回首页</a></p>
+{% endblock %}
+{% block comment %}
+{% if comment_list %}
+	
+	{% for comment in comment_list %}
+		<ul class="comment">
+		<li>
+		{% if comment.auther.username == "anony" %}
+		<h4>匿名用户    {{ comment.createtime|date:"Y-m-d H:i:s" }}</h4>
+		{% else %}
+                {% if comment.auther.logoimage.url != null %}
+                <img src="{{ comment.auther.logoimage.url }}" width="64" height="64" />
+                {% endif %}
+		<h4>{{ comment.auther }}    {{ comment.createtime|date:"Y-m-d H:i:s" }}</h4>
+		{% endif %}
+		</li>
+		<li>{{ comment.content|safe }}</li>
+		</ul>
+		<hr/>
+	{% endfor %}
+{% else %}
+	<ul class="comment">
+	<p>还没有人发表评论</p>
+	</ul>
+{% endif %}
+<span>评论 </span>
+<form action="{% url 'blogs:saveComment' %}" method="post" onsubmit="return toVaild()">
+{% csrf_token %}
+<ul class="comment">
+<li><textarea name="blogcomment"></textarea></li>
+<li><input type="submit" value="提交"></li>
+</ul>
+</form>
+<script>
+    function toVaild(){
+		var m_blogcontent = document.getElementByName("blogcomment").value;
+		if(m_blogcontent == "" || m_blogcontent == null)
+		{
+			alert("评论内容不能为空！");
+			return false;
+		}
+		return true;
+    }
+</script>
+{% endblock %}
+

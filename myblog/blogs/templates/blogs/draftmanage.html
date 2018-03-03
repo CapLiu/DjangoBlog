@@ -1,0 +1,42 @@
+{% extends "blogManageTemplate.html" %}
+{% block content %}
+<div id="content" class="list">
+<table>
+<tr>
+<td>标题</td>
+<td>            </td>
+<td>阅读数</td>
+<td>    </td>
+<td>评论数</td>
+<td>    </td>
+<td>操作</td>
+</tr>
+{% if blogList %}
+	{% for blog in blogList %}
+        <tr>
+        <td><a href="{% url 'blogs:content' blog.id %}">{{ blog.title }}</a> ({{ blog.createdate|date:"Y-m-d H:i:s" }})</td>
+        <td>            </td>
+        <td>{{ blog.readcount }}</td>
+        <td>    </td>
+        <td>{{ blog.commentcount }}</td>
+        <td>    </td>
+        <td><span><a href="{% url 'blogs:editBlog' blog.id %}">编辑</a></span>|<span><a href="javascript:void(0);" onClick="deleteConfirm('{{ blog.title }}','{{ blog.id }}')">删除</a></span>
+        </tr>
+	{% endfor %}
+{% else %}
+	<p>No blogs</p>
+{% endif %}
+</table>
+</div>
+<script>
+function deleteConfirm(title,id)
+{
+    var blogId = id;
+    var url_mask = "{% url 'blogs:deleteBlog' 'tmpId' %}".replace('tmpId',blogId);
+    if(confirm("确认删除" + title + "吗？"))
+    {
+        location.href = url_mask;
+    }
+}
+</script>
+{% endblock %}

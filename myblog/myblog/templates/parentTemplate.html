@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+	<script type="text/javascript" src="/static/ckeditor/ckeditor-init.js" data-ckeditor-basepath="/static/ckeditor/ckeditor/" id="ckeditor-init-script"></script>
+    <script type="text/javascript" src="/static/ckeditor/ckeditor/ckeditor.js"></script>
+    <title>Cap_Liu的博客</title>
+</head>
+<style type="text/css">
+    body{
+        color: #efd;
+        background: #F3F8C5;
+    }
+    h1{
+        padding: 2em;
+        background: #675;
+    }
+    h2{
+        color: #000000;
+        margin-top:2em;
+	text-align: center;
+    }
+    p{
+        
+    }
+	.introduce{
+		color: #000000;
+		margin-left: auto;
+		margin-right: 85%;
+	}
+	.list{
+		color: #000000;
+		margin-left: auto;
+		position:relative;
+		
+	}
+	.nav{
+		color: #000000;
+		top: -20px;
+		text-align: right;
+	}
+	.content{
+	    color: #000000;
+		top: -20px;
+	}
+	.content p{
+		text-indent: 5em;
+	}
+	.articlelist{
+		text-align: left;
+                font-size: 20px;
+	}
+	.articlelistinfo{
+		text-align: left;
+		font-size: 20px;
+	}
+	
+</style>
+<body>
+<h1>BetrayArmy的博客</h1>
+<div class="introduce">
+{% block introduce %}
+{% endblock %}
+</div>
+<div class="nav">
+{% block nav %}
+{% endblock %}
+</div>
+<div class="content">
+{% block content %}
+{% endblock %}
+</div>
+</body>
+</html>

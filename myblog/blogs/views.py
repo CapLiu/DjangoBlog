@@ -8,17 +8,28 @@ import datetime
 from .blogForm import BlogForm
 # Publish message to auther when new comment added.
 from users.models import InfoMessage
-
+from redis import StrictRedis,ConnectionPool
 
 
 # Create your views here.
 
 def content(request,blogId):
+    pool = ConnectionPool(host='localhost',port='6379',db=0)
+    redis = StrictRedis(connection_pool=pool)
     blog = Blog.objects.get(id=blogId)
+    if redis.exists(blogId):
+        blog_title = redis.lindex(blogId, 0)
+        blog_content = redis.lindex(blogId, 1)
+    else:
+        redis.rpush(blogId,blog.title)
+        redis.rpush(blogId,blog.content)
+        blog_title = redis.lindex(blogId,0)
+        blog_content = redis.lindex(blogId,1)
+
     comment = Comment.objects.filter(attachedblog=blog)
     request.session['currblogId'] = blogId
-    blog_title = blog.title
-    blog_content = blog.content
+    # blog_title = blog.title
+    # blog_content = blog.content
     blogContent = {
                    'blog_title':blog_title,
                    'content':blog_content,

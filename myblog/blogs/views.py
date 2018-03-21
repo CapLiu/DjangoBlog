@@ -17,14 +17,24 @@ def content(request,blogId):
     pool = ConnectionPool(host='localhost',port='6379',db=0)
     redis = StrictRedis(connection_pool=pool)
     blog = Blog.objects.get(id=blogId)
-    if redis.exists(blogId):
-        blog_title = redis.lindex(blogId, 0)
-        blog_content = redis.lindex(blogId, 1)
+    title_key = blogId + '_title'
+    content_key = blogId + '_content'
+    readcount_key = blogId + '_readcount'
+    if redis.exists(title_key):
+        blog_title = redis.get(title_key)
     else:
-        redis.rpush(blogId,blog.title)
-        redis.rpush(blogId,blog.content)
-        blog_title = redis.lindex(blogId,0)
-        blog_content = redis.lindex(blogId,1)
+        redis.set(title_key, blog.title)
+        blog_title = redis.get(title_key)
+    if redis.exists(content_key):
+        blog_content = redis.get(content_key)
+    else:
+        redis.set(content_key, blog.content)
+        blog_content = redis.get(content_key)
+    if redis.exists(readcount_key):
+        redis.incr(readcount_key)
+    else:
+        redis.set(readcount_key, blog.readcount)
+        redis.incr(readcount_key)
 
     comment = Comment.objects.filter(attachedblog=blog)
     request.session['currblogId'] = blogId
@@ -35,8 +45,8 @@ def content(request,blogId):
                    'content':blog_content,
                    'comment_list':comment
                    }
-    blog.readcount+=1
-    blog.save()
+    # blog.readcount+=1
+    # blog.save()
     return render(request,'blogs/content.html',blogContent)
 
 

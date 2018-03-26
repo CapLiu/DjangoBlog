@@ -35,7 +35,7 @@ def content(request,blogId):
     else:
         redis.set(readcount_key, blog.readcount)
         redis.incr(readcount_key)
-
+    pool.disconnect()
     comment = Comment.objects.filter(attachedblog=blog)
     request.session['currblogId'] = blogId
     # blog_title = blog.title
@@ -77,8 +77,17 @@ def saveComment(request):
         auther = Users.objects.get(username='anony')
     try:
         mycomment = Comment.create(blog,comment_content,auther,datetime.datetime.now())
-        blog.commentcount = blog.commentcount + 1
-        blog.save()
+        blogId = request.session['currblogId']
+        pool = ConnectionPool(host='localhost', port='6379', db=0)
+        redis = StrictRedis(connection_pool=pool)
+        commentcount_key = blogId + '_commentcount'
+        if redis.exists(commentcount_key):
+            redis.incr(commentcount_key)
+        else:
+            redis.set(commentcount_key,blog.commentcount)
+            redis.incr(commentcount_key)
+        # blog.commentcount = blog.commentcount + 1
+        # blog.save()
         mycomment.save()
         # Publish message to auther when new comment added.
         blogAuther = blog.auther
@@ -91,11 +100,20 @@ def saveComment(request):
 
     return HttpResponseRedirect(reverse('blogs:content',kwargs={'blogId':request.session['currblogId']}))
 
+def clearRedis(keys):
+    pool = ConnectionPool(host='localhost', port='6379', db=0)
+    redis = StrictRedis(connection_pool=pool)
+    for key in keys:
+        if redis.exists(key):
+            redis.delete(key)
+    pool.disconnect()
 
 def addBlog(request):
     if request.method == 'POST':
         if request.session.has_key('currentblogId'):
-            tmpBlog = Blog.objects.get(id=request.session['currentblogId'])
+            blogId = request.session['currentblogId']
+            tmpBlog = Blog.objects.get(id=blogId)
+
             if tmpBlog:
                 form = BlogForm(request.POST,instance=tmpBlog)
                 tmpBlog = form.save(commit=False)
@@ -113,6 +131,10 @@ def addBlog(request):
                     category.save()
                     newBlog.save()
                     result_info = 'Success'
+                    # 当编辑已有博客时，删除redis中内容
+            title_key = blogId + '_title'
+            content_key = blogId + '_content'
+            clearRedis([title_key, content_key])
             del request.session['currentblogId']
         else:
             form = BlogForm(request.POST)
@@ -207,6 +229,11 @@ def deleteblog(request,blogId):
     blog = Blog.objects.get(id=blogId)
     if blog.auther.username == request.session['username']:
         blog.delete()
+        title_key = blogId + '_title'
+        content_key = blogId + '_content'
+        readcount_key = blogId + '_readcount'
+        commentcount_key = blogId + '_commentcount'
+        clearRedis([title_key, content_key, readcount_key,commentcount_key])
         blogList = Blog.objects.filter(auther=request.session['username'])
     else:
         return render(request, 'blogs/failedoperation.html')

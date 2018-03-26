@@ -23,10 +23,18 @@ def index(request):
     redis = StrictRedis(connection_pool=pool)
     for blog in blogList:
         readcount_key = str(blog.id)+'_readcount'
+        commentcount_key = str(blog.id)+'_commentcount'
         if redis.exists(readcount_key):
             blog.readcount = redis.get(readcount_key)
             blog.save()
-
+        else:
+            redis.set(readcount_key,blog.readcount)
+        if redis.exists(commentcount_key):
+            blog.commentcount = redis.get(commentcount_key)
+            blog.save()
+        else:
+            redis.set(commentcount_key,blog.commentcount)
+    pool.disconnect()
 
     searchform = searchForm()
     # get all unread message count
@@ -62,11 +70,3 @@ def searchResult(request):
                'searchform':form
             }
     return render(request, 'myblog/index.html', content)
-
-
-# reply tip
-@accept_websocket
-def replyTip(request):
-    if request.is_websocket():
-        pass
-    pass

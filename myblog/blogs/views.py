@@ -9,6 +9,9 @@ from .blogForm import BlogForm
 # Publish message to auther when new comment added.
 from users.models import InfoMessage
 from redis import StrictRedis,ConnectionPool
+from myblog.myutil import generateKey
+from myblog.settings import RedisKey
+
 
 
 # Create your views here.
@@ -17,9 +20,9 @@ def content(request,blogId):
     pool = ConnectionPool(host='localhost',port='6379',db=0)
     redis = StrictRedis(connection_pool=pool)
     blog = Blog.objects.get(id=blogId)
-    title_key = blogId + '_title'
-    content_key = blogId + '_content'
-    readcount_key = blogId + '_readcount'
+    title_key = generateKey(blogId,RedisKey['TITLEKEY'])
+    content_key = generateKey(blogId,RedisKey['CONTENTKEY'])
+    readcount_key = generateKey(blogId,RedisKey['READCOUNTKEY'])
     if redis.exists(title_key):
         blog_title = redis.get(title_key)
     else:
@@ -80,7 +83,7 @@ def saveComment(request):
         blogId = request.session['currblogId']
         pool = ConnectionPool(host='localhost', port='6379', db=0)
         redis = StrictRedis(connection_pool=pool)
-        commentcount_key = blogId + '_commentcount'
+        commentcount_key = generateKey(blogId,RedisKey['COMMENTCOUNTKEY'])
         if redis.exists(commentcount_key):
             redis.incr(commentcount_key)
         else:
@@ -89,11 +92,18 @@ def saveComment(request):
         # blog.commentcount = blog.commentcount + 1
         # blog.save()
         mycomment.save()
-        # Publish message to auther when new comment added.
-        blogAuther = blog.auther
-        message_content = auther.username + u'评论了博客'+blog.title
-        infoMessage = InfoMessage.create(blogAuther,message_content)
-        infoMessage.save()
+        # Publish message to auther when new comment added(with redis)
+        # blogAuther = blog.auther
+        messagekey = generateKey(blog.auther.username,RedisKey['UNREADMSGKEY'])
+        message_content = auther.username + u'评论了博客' + blog.title + u'于' + str(datetime.datetime.now())
+        redis.lpush(messagekey,message_content)
+
+
+
+
+        # message_content = auther.username + u'评论了博客'+blog.title
+        # infoMessage = InfoMessage.create(blogAuther,message_content)
+        # infoMessage.save()
         result_info = 'Success'
     except ValidationError as e:
         result_info = 'Fail'

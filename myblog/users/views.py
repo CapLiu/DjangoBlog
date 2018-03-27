@@ -10,6 +10,9 @@ from myblog.settings import MEDIA_ROOT
 from .userForm import UserRegisterForm,UserLoginForm
 from blogs.models import Blog
 from .models import InfoMessage
+from redis import StrictRedis,ConnectionPool
+from myblog.myutil import generateKey
+from myblog.settings import RedisKey
 
 # Create your views here.
 
@@ -111,8 +114,16 @@ def logoff(request):
 def messagebox(request):
     try:
         currentUser = Users.objects.get(username=request.session['username'])
-        infos = InfoMessage.objects.filter(attachUser=currentUser)
-        messages = {'infos':infos}
+        pool = ConnectionPool(host='localhost', port='6379', db=0)
+        redis = StrictRedis(connection_pool=pool)
+        messagekey = generateKey(currentUser.username,RedisKey['UNREADMSGKEY'])
+        if redis.exists(messagekey):
+            infos = redis.lrange(messagekey,0,redis.llen(messagekey))
+            messages = {'infos': infos}
+        else:
+            messages = {}
+        # infos = InfoMessage.objects.filter(attachUser=currentUser)
+
     except Exception as e:
         pass
     return render(request,'users/messagebox.html',messages)
@@ -120,12 +131,20 @@ def messagebox(request):
 def setreaded(request):
     try:
         currentUser = Users.objects.get(username=request.session['username'])
-        infos = InfoMessage.objects.filter(attachUser=currentUser)
-        for info in infos:
-            info.isRead = True
-            info.save()
-        infos = InfoMessage.objects.filter(attachUser=currentUser)
-        messages = {'infos': infos}
+        messagekey = generateKey(currentUser.username, RedisKey['UNREADMSGKEY'])
+        pool = ConnectionPool(host='localhost', port='6379', db=0)
+        redis = StrictRedis(connection_pool=pool)
+        if redis.exists(messagekey):
+            redis.delete(messagekey)
+
+
+
+        # infos = InfoMessage.objects.filter(attachUser=currentUser)
+        # for info in infos:
+        #     info.isRead = True
+        #    info.save()
+        # infos = InfoMessage.objects.filter(attachUser=currentUser)
+        # messages = {'infos': infos}
     except Exception as e:
         pass
-    return HttpResponseRedirect(reverse('users:messagebox'),messages)
+    return HttpResponseRedirect(reverse('users:messagebox'))

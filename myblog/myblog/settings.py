@@ -127,3 +127,10 @@ CKEDITOR_IMAGE_BACKEND = 'pillow'
 STATIC_ROOT = os.path.join(BASE_DIR,'static/')
 MEDIA_ROOT = os.path.join(BASE_DIR,'media/')
 MEDIA_URL = '/media/'
+
+RedisKey = {'TITLEKEY':'title',
+            'CONTENTKEY':'content',
+            'READCOUNTKEY':'readcount',
+            'COMMENTCOUNTKEY':'commentcount',
+            'UNREADMSGKEY':'unreadmsg'
+            }

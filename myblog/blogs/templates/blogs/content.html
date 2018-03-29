@@ -4,7 +4,7 @@
 <h2>{{ blog_title }}</h2>
 {{ content|safe }}
 </div>
-<p><a href="{% url 'index' %}">返回首页</a></p>
+<p><a href="{% url 'blogs:thumbup' %}">赞({{ countOfThumb }})</a> <a href="{% url 'index' %}">返回首页</a></p>
 {% endblock %}
 {% block comment %}
 {% if comment_list %}

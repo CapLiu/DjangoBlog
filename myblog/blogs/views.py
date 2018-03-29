@@ -18,11 +18,13 @@ from myblog.settings import RedisKey
 
 def content(request,blogId):
     pool = ConnectionPool(host='localhost',port='6379',db=0)
-    redis = StrictRedis(connection_pool=pool)
+    redis = StrictRedis(connection_pool=pool,decode_responses=True)
     blog = Blog.objects.get(id=blogId)
     title_key = generateKey(blogId,RedisKey['TITLEKEY'])
     content_key = generateKey(blogId,RedisKey['CONTENTKEY'])
     readcount_key = generateKey(blogId,RedisKey['READCOUNTKEY'])
+
+    blogthumb_key = generateKey(blogId, RedisKey['THUMBCOUNTKEY'])
     if redis.exists(title_key):
         blog_title = redis.get(title_key)
     else:
@@ -38,15 +40,22 @@ def content(request,blogId):
     else:
         redis.set(readcount_key, blog.readcount)
         redis.incr(readcount_key)
+
+    countOfThumb = 0
+    if redis.exists(blogthumb_key):
+        countOfThumb = redis.get(blogthumb_key)
     pool.disconnect()
     comment = Comment.objects.filter(attachedblog=blog)
     request.session['currblogId'] = blogId
     # blog_title = blog.title
     # blog_content = blog.content
+
+
     blogContent = {
                    'blog_title':blog_title,
                    'content':blog_content,
-                   'comment_list':comment
+                   'comment_list':comment,
+                   'countOfThumb':countOfThumb
                    }
     # blog.readcount+=1
     # blog.save()
@@ -82,7 +91,7 @@ def saveComment(request):
         mycomment = Comment.create(blog,comment_content,auther,datetime.datetime.now())
         blogId = request.session['currblogId']
         pool = ConnectionPool(host='localhost', port='6379', db=0)
-        redis = StrictRedis(connection_pool=pool)
+        redis = StrictRedis(connection_pool=pool,decode_responses=True)
         commentcount_key = generateKey(blogId,RedisKey['COMMENTCOUNTKEY'])
         if redis.exists(commentcount_key):
             redis.incr(commentcount_key)
@@ -97,9 +106,6 @@ def saveComment(request):
         messagekey = generateKey(blog.auther.username,RedisKey['UNREADMSGKEY'])
         message_content = auther.username + u'评论了博客' + blog.title + u'于' + str(datetime.datetime.now())
         redis.lpush(messagekey,message_content)
-
-
-
 
         # message_content = auther.username + u'评论了博客'+blog.title
         # infoMessage = InfoMessage.create(blogAuther,message_content)
@@ -157,7 +163,8 @@ def addBlog(request):
                 category.save()
                 newBlog.save()
                 result_info = 'Success'
-            del request.session['currentblogId']
+            if request.session.has_key('currentblogId'):
+                del request.session['currentblogId']
         return HttpResponseRedirect(reverse('blogs:addblogResult', kwargs={'info': result_info}))
     else:
         if request.session['username'] != 'anony':
@@ -291,4 +298,44 @@ def deletecomment(request,commentId):
 def draftmanage(request):
     blogList = Blog.objects.filter(auther=request.session['username']).filter(draft=True)
     return render(request, 'blogs/draftmanage.html', {'blogList': blogList})
+
+# 点赞功能
+def thumpup(request):
+    try:
+        currentUser = Users.objects.get(username=request.session['username'])
+    except KeyError:
+        pass
+    blogId = request.session['currblogId']
+    blog = Blog.objects.get(pk=blogId)
+    auther = blog.auther.username
+
+    title_key = generateKey(blogId, RedisKey['TITLEKEY'])
+    userthumb_key = generateKey(auther,RedisKey['THUMBUPKEY'])
+    blogthumb_key = generateKey(blogId,RedisKey['THUMBCOUNTKEY'])
+    pool = ConnectionPool(host='localhost', port='6379', db=0)
+    redis = StrictRedis(connection_pool=pool,decode_responses=True)
+    title = ''
+    countOfThumb = 0
+    if redis.exists(title_key):
+        title = redis.get(title_key)
+        redis.sadd(userthumb_key,title)
+    else:
+        title = blog.title
+        redis.sadd(userthumb_key,blog.title)
+    messagekey = generateKey(auther, RedisKey['UNREADMSGKEY'])
+
+    if redis.sismember(userthumb_key,title):
+        pass
+    else:
+        if redis.exists(blogthumb_key):
+            redis.incr(blogthumb_key)
+        else:
+            redis.set(blogthumb_key,countOfThumb)
+            redis.incr(blogthumb_key)
+        message_content = currentUser.username + u'点赞了博客' + title + u'于' + str(datetime.datetime.now())
+        redis.lpush(messagekey, message_content)
+
+    pool.disconnect()
+    return HttpResponseRedirect(reverse('blogs:content', kwargs={'blogId': blogId}))
+
 

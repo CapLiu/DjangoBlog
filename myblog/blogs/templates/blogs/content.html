@@ -31,23 +31,12 @@
 	</ul>
 {% endif %}
 <span>评论 </span>
-<form action="{% url 'blogs:saveComment' %}" method="post" onsubmit="return toVaild()">
+<form action="{% url 'blogs:saveComment' %}" method="post">
 {% csrf_token %}
 <ul class="comment">
 <li><textarea name="blogcomment"></textarea></li>
 <li><input type="submit" value="提交"></li>
 </ul>
 </form>
-<script>
-    function toVaild(){
-		var m_blogcontent = document.getElementByName("blogcomment").value;
-		if(m_blogcontent == "" || m_blogcontent == null)
-		{
-			alert("评论内容不能为空！");
-			return false;
-		}
-		return true;
-    }
-</script>
 {% endblock %}
 

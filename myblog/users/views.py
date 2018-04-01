@@ -98,7 +98,7 @@ def userinfo(request,username):
                    'currentUser':currentUser
                    }
     except Exception as e:
-        pass
+        return render(request)
     return render(request,'users/userinfo.html',content)
 
 

@@ -36,7 +36,7 @@ def index(request):
             blog.save()
         else:
             redis.set(commentcount_key,blog.commentcount)
-
+    pool.disconnect()
 
     searchform = searchForm()
     # get all unread message count by redis

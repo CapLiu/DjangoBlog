@@ -134,5 +134,5 @@ RedisKey = {'TITLEKEY':'title',
             'COMMENTCOUNTKEY':'commentcount',
             'UNREADMSGKEY':'unreadmsg',
             'THUMBUPKEY':'thumbup',
-            'THUMBCOUNTKEY':'thumbupcount'
+            'THUMBCOUNTKEY':'thumbupcount',
             }

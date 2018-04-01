@@ -1,0 +1,7 @@
+{% extends "userTemplate.html" %}
+{% block content %}
+<div class="content">
+<p>登录后方可进行此操作</p>
+</div>
+<p><a href="{% url 'users:userlogin' %}">登录</a> <a href="{% url 'index' %}">返回首页</a></p>
+{% endblock %}

@@ -98,7 +98,7 @@ def userinfo(request,username):
                    'currentUser':currentUser
                    }
     except Exception as e:
-        return render(request)
+        return render(request, 'users/pleaselogin.html')
     return render(request,'users/userinfo.html',content)
 
 
@@ -119,7 +119,11 @@ def messagebox(request):
         messagekey = generateKey(currentUser.username,RedisKey['UNREADMSGKEY'])
         if redis.exists(messagekey):
             infos = redis.lrange(messagekey,0,redis.llen(messagekey))
-            messages = {'infos': infos}
+            msginfos = []
+            for msg in infos:
+                msg = msg.decode()
+                msginfos.append(msg)
+            messages = {'infos': msginfos}
         else:
             messages = {}
         # infos = InfoMessage.objects.filter(attachUser=currentUser)

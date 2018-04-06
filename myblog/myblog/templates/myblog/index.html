@@ -38,7 +38,7 @@
 	<ul>
 	{% for blog in blog_list %}
 		<div class="articlelist">
-		<a href="{% url 'blogs:content' blog.id %}">{{ blog.title }}</a>-<a href="{% url 'users:userIndex' blog.auther.username %}">{{ blog.auther }}</a>
+		<a href="{% url 'blogs:content' blog.id %}">{{ blog.title }}</a>-<a href="{% url 'users:userIndex' blog.auther.username %}">{{ blog.auther.username }}</a>
 		<div class="articlelistinfo">
 		<span title="阅读次数">阅读 {{ blog.readcount }}</span>
 		<span title="创建时间">{{ blog.createdate|date:"Y-m-d H:i:s" }}</span>

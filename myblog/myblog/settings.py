@@ -30,6 +30,7 @@ ALLOWED_HOSTS = ['*'] #Debug=True set
 
 # Application definition
 
+
 INSTALLED_APPS = [
     'ckeditor',
     'ckeditor_uploader',
@@ -102,7 +103,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
 
@@ -135,4 +135,5 @@ RedisKey = {'TITLEKEY':'title',
             'UNREADMSGKEY':'unreadmsg',
             'THUMBUPKEY':'thumbup',
             'THUMBCOUNTKEY':'thumbupcount',
+            'READBLOGKEY':'readblog'
             }

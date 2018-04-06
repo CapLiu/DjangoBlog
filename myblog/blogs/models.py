@@ -15,8 +15,8 @@ class Category(models.Model):
 
 class Blog(models.Model):
     title = models.CharField(max_length=32,verbose_name=u'标题')
-    auther = models.ForeignKey(Users,default='')
-    category = models.ForeignKey(Category,null=True)
+    auther = models.ForeignKey(Users,default='',on_delete=models.CASCADE)
+    category = models.ForeignKey(Category,null=True,on_delete=models.CASCADE)
     content = RichTextUploadingField(verbose_name=u'内容')
     createdate = models.DateTimeField('Create time',default=timezone.now())
     modifydate = models.DateTimeField('Modify time',default=timezone.now())
@@ -35,9 +35,9 @@ class Blog(models.Model):
 
 
 class Comment(models.Model):
-    attachedblog = models.ForeignKey(Blog)
+    attachedblog = models.ForeignKey(Blog,on_delete=models.CASCADE)
     content = models.TextField()
-    auther = models.ForeignKey(Users,default='')
+    auther = models.ForeignKey(Users,default='',on_delete=models.CASCADE)
     createtime = models.DateTimeField('Comment Create time')
 
     @classmethod

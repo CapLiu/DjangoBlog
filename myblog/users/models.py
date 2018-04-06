@@ -26,7 +26,7 @@ class Users(models.Model):
 
 
 class InfoMessage(models.Model):
-    attachUser = models.ForeignKey(Users,default='')
+    attachUser = models.ForeignKey(Users,default='',on_delete=models.CASCADE)
     content = models.CharField(max_length=128)
     isRead = models.BooleanField(default=False)
     publishtime = models.DateField(auto_now=True)

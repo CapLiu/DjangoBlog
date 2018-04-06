@@ -22,21 +22,28 @@ def content(request,blogId):
     currentusername = request.session['username']
     blog = Blog.objects.get(id=blogId)
     title_key = generateKey(blogId,RedisKey['TITLEKEY'])
-    content_key = generateKey(blogId,RedisKey['CONTENTKEY'])
     readcount_key = generateKey(blogId,RedisKey['READCOUNTKEY'])
-
+    readblog_key = generateKey(currentusername,RedisKey['READBLOGKEY'])
     blogthumb_key = generateKey(blogId, RedisKey['THUMBCOUNTKEY'])
+
     if redis.exists(title_key):
-        blog_title = redis.get(title_key)
+        blog_title = redis.get(title_key).decode()
     else:
         redis.set(title_key, blog.title)
-        blog_title = redis.get(title_key)
+        blog_title = redis.get(title_key).decode()
 
     blog_content = blog.content
 
     countOfThumb = 0
     if redis.exists(blogthumb_key):
-        countOfThumb = redis.get(blogthumb_key)
+        countOfThumb = redis.get(blogthumb_key).decode()
+
+    userthumb_key = generateKey(currentusername, RedisKey['THUMBUPKEY'])
+    thumbflag = 'F'
+    if redis.exists(userthumb_key):
+        if redis.sismember(userthumb_key, blogId):
+            thumbflag = 'T'
+
     pool.disconnect()
     comment = Comment.objects.filter(attachedblog=blog)
     request.session['currblogId'] = blogId
@@ -48,22 +55,24 @@ def content(request,blogId):
                    'blog_title':blog_title,
                    'content':blog_content,
                    'comment_list':comment,
-                   'countOfThumb':countOfThumb
+                   'countOfThumb':countOfThumb,
+                   'thumbupflag':thumbflag
                    }
     # blog.readcount+=1
     # blog.save()
 
-    readblogIdlist = ''
+    readblogIdlist = []
     response = render(request, 'blogs/content.html', blogContent)
-    if request.COOKIES.has_key(currentusername):
-        if request.COOKIES.get(currentusername) != blogId:
+    if readblog_key in request.COOKIES:
+        readblogIdlist = request.COOKIES.get(readblog_key).split(',')
+        if blogId not in readblogIdlist:
             if redis.exists(readcount_key):
                 redis.incr(readcount_key)
             else:
                 redis.set(readcount_key, blog.readcount)
                 redis.incr(readcount_key)
             # 添加cookie
-            response.set_cookie(currentusername, blogId, 60)
+            readblogIdlist.append(blogId)
     else:
         if redis.exists(readcount_key):
             redis.incr(readcount_key)
@@ -71,9 +80,12 @@ def content(request,blogId):
             redis.set(readcount_key, blog.readcount)
             redis.incr(readcount_key)
         # 添加cookie
-        response.set_cookie(currentusername, blogId, 60)
+        readblogIdlist.append(blogId)
+    readblogIdStr = ','.join(readblogIdlist)
+    response.set_cookie(readblog_key, readblogIdStr, 60)
 
     return response
+
 
 
 # def saveBlog(request):
@@ -102,7 +114,7 @@ def saveComment(request):
     result_info = ''
     try:
         auther = Users.objects.get(username=request.session['username'])
-    except KeyError:
+    except:
         auther = Users.objects.get(username='anony')
     try:
         mycomment = Comment.create(blog,comment_content,auther,datetime.datetime.now())
@@ -144,7 +156,7 @@ def clearRedis(keys):
 
 def addBlog(request):
     if request.method == 'POST':
-        if request.session.has_key('currentblogId'):
+        if 'currentblogId' in request.session:
             blogId = request.session['currentblogId']
             tmpBlog = Blog.objects.get(id=blogId)
 
@@ -160,7 +172,7 @@ def addBlog(request):
                     newBlog = form.save(commit=False)
                     newBlog.auther = Users.objects.get(username=request.session['username'])
                     newBlog.draft = False
-                    category = Category.objects.get(categoryname=newBlog.category)
+                    category = Category.objects.get(categoryname=newBlog.category.categoryname)
                     category.blogcount = category.blogcount+1
                     category.save()
                     newBlog.save()
@@ -176,12 +188,13 @@ def addBlog(request):
                 newBlog = form.save(commit=False)
                 newBlog.auther = Users.objects.get(username=request.session['username'])
                 newBlog.draft = False
-                category = Category.objects.get(categoryname=newBlog.category)
+                category = Category.objects.get(categoryname=newBlog.category.categoryname)
                 category.blogcount = category.blogcount + 1
                 category.save()
                 newBlog.save()
                 result_info = 'Success'
-            if request.session.has_key('currentblogId'):
+            if 'currentblogId' in request.session:
+            # if request.session.has_key('currentblogId'):
                 del request.session['currentblogId']
         return HttpResponseRedirect(reverse('blogs:addblogResult', kwargs={'info': result_info}))
     else:
@@ -321,10 +334,10 @@ def draftmanage(request):
 def thumpup(request):
     try:
         currentUser = Users.objects.get(username=request.session['username'])
-        if request.session['username']== 'anony':
-            return render(request, 'users/pleaselogin.html')
     except KeyError:
         return render(request,'users/pleaselogin.html')
+    except Users.DoesNotExist:
+        return render(request, 'users/pleaselogin.html')
     blogId = request.session['currblogId']
     blog = Blog.objects.get(pk=blogId)
     auther = blog.auther.username

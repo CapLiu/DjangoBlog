@@ -4,7 +4,13 @@
 <h2>{{ blog_title }}</h2>
 {{ content|safe }}
 </div>
-<p><a href="{% url 'blogs:thumbup' %}">赞({{ countOfThumb }})</a> <a href="{% url 'index' %}">返回首页</a></p>
+<p>
+{% if thumbupflag == "T" %}
+已赞({{ countOfThumb }})
+{% else %}
+<a href="{% url 'blogs:thumbup' %}">赞({{ countOfThumb }})</a> 
+{% endif %}
+<a href="{% url 'index' %}">返回首页</a></p>
 {% endblock %}
 {% block comment %}
 {% if comment_list %}
@@ -18,7 +24,7 @@
                 {% if comment.auther.logoimage.url != null %}
                 <img src="{{ comment.auther.logoimage.url }}" width="64" height="64" />
                 {% endif %}
-		<h4>{{ comment.auther }}    {{ comment.createtime|date:"Y-m-d H:i:s" }}</h4>
+		<h4>{{ comment.auther.username }}    {{ comment.createtime|date:"Y-m-d H:i:s" }}</h4>
 		{% endif %}
 		</li>
 		<li>{{ comment.content|safe }}</li>

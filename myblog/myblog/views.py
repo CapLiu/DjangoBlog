@@ -3,11 +3,12 @@ from django.shortcuts import render
 from users.models import Users,InfoMessage
 from blogs.models import Blog
 from .indexForm import searchForm
-from dwebsocket import require_websocket,accept_websocket
+# from dwebsocket import require_websocket,accept_websocket
 # 从redis中将每篇博客的阅读数回写到数据库中
 from redis import StrictRedis,ConnectionPool
 from .myutil import generateKey
 from .settings import RedisKey
+import uuid
 
 def index(request):
     try:
@@ -15,10 +16,13 @@ def index(request):
         user = Users.objects.get(username=username)
     except KeyError:
         user = Users.objects.get(username='anony')
-        request.session['username'] = 'anony'
+        if 'username' not in request.session:
+            request.session['username'] = str(uuid.uuid1())
     except Users.DoesNotExist:
         user = Users.objects.get(username='anony')
-        request.session['username'] = 'anony'
+        if request.session['username'] == '':
+            request.session['username'] = str(uuid.uuid1())
+    username = request.session['username']
     blogList = Blog.objects.filter(draft=False).order_by('title')
     # 从redis中将每篇博客的阅读数回写到数据库中
     pool = ConnectionPool(host='localhost', port='6379', db=0)
@@ -27,7 +31,7 @@ def index(request):
         readcount_key = generateKey(blog.id,RedisKey['READCOUNTKEY'])
         commentcount_key = generateKey(blog.id,RedisKey['COMMENTCOUNTKEY'])
         if redis.exists(readcount_key):
-            blog.readcount = redis.get(readcount_key)
+            blog.readcount = redis.get(readcount_key).decode()
             blog.save()
         else:
             redis.set(readcount_key,blog.readcount)
@@ -40,7 +44,7 @@ def index(request):
 
     searchform = searchForm()
     # get all unread message count by redis
-    messagekey = generateKey(user.username,RedisKey['UNREADMSGKEY'])
+    messagekey = generateKey(username,RedisKey['UNREADMSGKEY'])
     if redis.exists(messagekey):
         msgcount = redis.llen(messagekey)
     else:

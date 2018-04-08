@@ -27,21 +27,6 @@ def index(request):
     # 从redis中将每篇博客的阅读数回写到数据库中
     pool = ConnectionPool(host='localhost', port='6379', db=0)
     redis = StrictRedis(connection_pool=pool)
-    for blog in blogList:
-        readcount_key = generateKey(blog.id,RedisKey['READCOUNTKEY'])
-        commentcount_key = generateKey(blog.id,RedisKey['COMMENTCOUNTKEY'])
-        if redis.exists(readcount_key):
-            blog.readcount = redis.get(readcount_key).decode()
-            blog.save()
-        else:
-            redis.set(readcount_key,blog.readcount)
-        if redis.exists(commentcount_key):
-            blog.commentcount = redis.get(commentcount_key)
-            blog.save()
-        else:
-            redis.set(commentcount_key,blog.commentcount)
-    pool.disconnect()
-
     searchform = searchForm()
     # get all unread message count by redis
     messagekey = generateKey(username,RedisKey['UNREADMSGKEY'])
@@ -50,8 +35,6 @@ def index(request):
     else:
         msgcount = 0
     pool.disconnect()
-    # unreadmeg =  InfoMessage.objects.filter(attachUser=user).filter(isRead=False)
-    # username = request.session.get('username')
     content = { 'blog_list':blogList,
                 'curruser':user,
                 'searchform':searchform,

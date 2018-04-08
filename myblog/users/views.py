@@ -118,7 +118,7 @@ def messagebox(request):
         redis = StrictRedis(connection_pool=pool)
         messagekey = generateKey(currentUser.username,RedisKey['UNREADMSGKEY'])
         if redis.exists(messagekey):
-            infos = redis.lrange(messagekey,0,redis.llen(messagekey))
+            infos = redis.lrange(messagekey,0,redis.llen(messagekey)-1)
             msginfos = []
             for msg in infos:
                 msg = msg.decode()
@@ -129,7 +129,7 @@ def messagebox(request):
         # infos = InfoMessage.objects.filter(attachUser=currentUser)
 
     except Exception as e:
-        pass
+        messages = {}
     return render(request,'users/messagebox.html',messages)
 
 def setreaded(request):
@@ -140,15 +140,6 @@ def setreaded(request):
         redis = StrictRedis(connection_pool=pool)
         if redis.exists(messagekey):
             redis.delete(messagekey)
-
-
-
-        # infos = InfoMessage.objects.filter(attachUser=currentUser)
-        # for info in infos:
-        #     info.isRead = True
-        #    info.save()
-        # infos = InfoMessage.objects.filter(attachUser=currentUser)
-        # messages = {'infos': infos}
     except Exception as e:
         pass
     return HttpResponseRedirect(reverse('users:messagebox'))

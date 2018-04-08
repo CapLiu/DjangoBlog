@@ -23,8 +23,8 @@ def content(request,blogId):
     blog = Blog.objects.get(id=blogId)
     title_key = generateKey(blogId,RedisKey['TITLEKEY'])
     readcount_key = generateKey(blogId,RedisKey['READCOUNTKEY'])
-    readblog_key = generateKey(currentusername,RedisKey['READBLOGKEY'])
-    blogthumb_key = generateKey(blogId, RedisKey['THUMBCOUNTKEY'])
+
+
 
     if redis.exists(title_key):
         blog_title = redis.get(title_key).decode()
@@ -35,6 +35,7 @@ def content(request,blogId):
     blog_content = blog.content
 
     countOfThumb = 0
+    blogthumb_key = generateKey(blogId, RedisKey['THUMBCOUNTKEY'])
     if redis.exists(blogthumb_key):
         countOfThumb = redis.get(blogthumb_key).decode()
 
@@ -60,7 +61,7 @@ def content(request,blogId):
                    }
     # blog.readcount+=1
     # blog.save()
-
+    readblog_key = generateKey(currentusername, RedisKey['READBLOGKEY'])
     readblogIdlist = []
     response = render(request, 'blogs/content.html', blogContent)
     if readblog_key in request.COOKIES:
@@ -71,16 +72,16 @@ def content(request,blogId):
             else:
                 redis.set(readcount_key, blog.readcount)
                 redis.incr(readcount_key)
-            # 添加cookie
-            readblogIdlist.append(blogId)
     else:
         if redis.exists(readcount_key):
             redis.incr(readcount_key)
         else:
             redis.set(readcount_key, blog.readcount)
             redis.incr(readcount_key)
-        # 添加cookie
-        readblogIdlist.append(blogId)
+    blog.readcount = redis.get(readcount_key).decode()
+    blog.save()
+    # 添加cookie
+    readblogIdlist.append(blogId)
     readblogIdStr = ','.join(readblogIdlist)
     response.set_cookie(readblog_key, readblogIdStr, 60)
 
@@ -130,16 +131,12 @@ def saveComment(request):
         # blog.commentcount = blog.commentcount + 1
         # blog.save()
         mycomment.save()
+        blog.commentcount = redis.get(commentcount_key)
+        blog.save()
         # Publish message to auther when new comment added(with redis)
-        # blogAuther = blog.auther
         messagekey = generateKey(blog.auther.username,RedisKey['UNREADMSGKEY'])
-        readcount_key = generateKey(blogId, RedisKey['READCOUNTKEY'])
         message_content = auther.username + u'评论了博客' + blog.title + u'于' + str(datetime.datetime.now())
         redis.lpush(messagekey,message_content)
-
-        # message_content = auther.username + u'评论了博客'+blog.title
-        # infoMessage = InfoMessage.create(blogAuther,message_content)
-        # infoMessage.save()
         result_info = 'Success'
     except ValidationError as e:
         result_info = 'Fail'
@@ -331,7 +328,7 @@ def draftmanage(request):
     return render(request, 'blogs/draftmanage.html', {'blogList': blogList})
 
 # 点赞功能
-def thumpup(request):
+def thumbup(request):
     try:
         currentUser = Users.objects.get(username=request.session['username'])
     except KeyError:
@@ -341,7 +338,6 @@ def thumpup(request):
     blogId = request.session['currblogId']
     blog = Blog.objects.get(pk=blogId)
     auther = blog.auther.username
-    title_key = generateKey(blogId, RedisKey['TITLEKEY'])
     userthumb_key = generateKey(currentUser.username,RedisKey['THUMBUPKEY'])
     blogthumb_key = generateKey(blogId,RedisKey['THUMBCOUNTKEY'])
     pool = ConnectionPool(host='localhost', port='6379', db=0)
@@ -349,12 +345,7 @@ def thumpup(request):
     title = ''
     countOfThumb = 0
 
-    # if redis.exists(title_key):
-    #    title = redis.get(title_key)
-    #else:
-    #    title = blog.title
     messagekey = generateKey(auther, RedisKey['UNREADMSGKEY'])
-    readcount_key = generateKey(blogId, RedisKey['READCOUNTKEY'])
     # 每个读者不能给同一篇文章多次点赞
     if redis.sismember(userthumb_key,blogId):
         pass

@@ -12,7 +12,7 @@ urlpatterns = [
     url(r'^addblogResult/(?P<info>.*)$', views.addBlogResult, name='addblogResult'),
     url(r'^saveDraft/$',views.saveDraft,name='saveDraft'),
     url(r'^saveComment/$',views.saveComment,name='saveComment'),
-    url(r'^thumbup/$',views.thumpup,name='thumbup'),
+    url(r'^thumbup/$',views.thumbup,name='thumbup'),
     # blog manage
     url(r'^articleList/$',views.articlelist,name='articlelist'),
     url(r'^blogmanage$',views.blogmanage,name='blogmanage'),

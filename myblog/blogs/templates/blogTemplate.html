@@ -5,6 +5,7 @@
 	<script type="text/javascript" src="/static/ckeditor/ckeditor-init.js" data-ckeditor-basepath="/static/ckeditor/ckeditor/" id="ckeditor-init-script"></script>
     <script type="text/javascript" src="/static/ckeditor/ckeditor/ckeditor.js"></script>
     <script type="text/javascript" src="/static/js/jquery-3.2.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <title>Cap_Liu的博客</title>
 </head>
 <style type="text/css">
@@ -27,9 +28,16 @@
     }
 	.introduce{
 		color: #000000;
-		margin-left: auto;
-		margin-right: 85%;
+		width: auto;
+                display:inline-block;
+                vertical-align: top;
+                background:#FFFFFF;
 	}
+        .blogcontent{
+                display:inline-block;
+                width:80%;
+                background:#FFFFFF;
+        }
 	.list{
 		color: #000000;
 	}
@@ -42,7 +50,7 @@
 	}
 	.content{
 	    color: #000000;
-	    top: -1.25em;
+            width: auto;
 	}
 	.content p{
 		text-indent: 5em;
@@ -54,6 +62,7 @@
         }
 	.comment{
 		color: #000000;
+                width:auto;
 	}
 	.comment h4{
 		color: #000000;
@@ -65,18 +74,26 @@
 	ul li{
 		list-style: none;
 	}
+        dl{
+                width:auto;
+                float:left;
+                text-align:center;
+        }
+        dt{
+                width:auto;
+                text-align:center;
+        }
+        dd{
+                width:auto;
+                text-align:center;
+        }
 	
 	
 </style>
 <body>
 <h1>Cap_Liu的博客</h1>
-<div class="introduce">
-{{ test }}
-</div>
-<div class="nav">
-{% block nav %}
-{% endblock %}
-</div>
+
+<div class="blogcontent">
 <div class="content">
 {% block content %}
 {% endblock %}
@@ -85,5 +102,48 @@
 {% block comment %}
 {% endblock %}
 </div>
+</div>
+
+<div class="introduce">
+{% if auther.username  != "anony" or  auther.username  != "" %}
+<div>
+{% if auther.logoimage %}
+<img src="{{ auther.logoimage.url }}" width="64" height="64" />
+{% endif %}
+</div>
+<a href="{% url 'users:userIndex' auther.username %}">{{ auther.username }}</a>
+<div>
+<p><a href="javascript:void(0);" onClick="focusUser('{{ auther.username }}')">关注Ta</a></p>
+<hr></hr>
+<dl title="0">
+<dt>博客</dt>
+<dd>{{ blogcount }}</dd>
+</dl>
+<dl title="0">
+<dt>关注</dt>
+<dd>{{ followcount }}</dd>
+</dl>
+<dl title="0">
+<dt>粉丝</dt>
+<dd>{{ fanscount }}</dd>
+</dl>
+<dl title="0">
+<dt>评论</dt>
+<dd>{{ commentcount }}</dd>
+</dl>
+</div>
+{% endif %}
+</div>
+
+
+<script>
+function focusUser(username)
+{
+    var user = username;
+    var url_mask = "{% url 'blogs:deleteBlog' 'tmpUsername' %}".replace('tmpUsername',user);
+    location.href = url_mask;
+}
+
+</script>
 </body>
 </html>

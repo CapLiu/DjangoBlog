@@ -27,7 +27,7 @@
 		<h4>{{ comment.auther.username }}    {{ comment.createtime|date:"Y-m-d H:i:s" }}</h4>
 		{% endif %}
 		</li>
-		<li>{{ comment.content|safe }}</li>
+		<li>{{ comment.content }}</li>
 		</ul>
 		<hr/>
 	{% endfor %}

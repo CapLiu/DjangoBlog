@@ -12,7 +12,30 @@ from redis import StrictRedis,ConnectionPool
 from myblog.myutil import generateKey
 from myblog.settings import RedisKey
 
+def getUserDataInfo(username):
+    blogList =  Blog.objects.filter(auther=username).filter(draft=False)
+    followkey = generateKey(username, RedisKey['FOLLOWKEY'])
+    fanskey = generateKey(username, RedisKey['FANSKEY'])
+    followcount = 0
+    fanscount = 0
+    blogCount = 0
+    commentCount = 0
+    pool = ConnectionPool(host='localhost', port='6379', db=0)
+    redis = StrictRedis(connection_pool=pool)
+    if redis.exists(followkey):
+        followcount = redis.scard(followkey)
+    if redis.exists(fanskey):
+        fanscount = redis.scard(fanskey)
 
+    for blog in blogList:
+        blogCount = blogCount + 1
+        commentCount = commentCount + blog.commentcount
+    pool.disconnect()
+    userdataInfo = {'followcount':followcount,
+                    'fanscount':fanscount,
+                    'blogcount':blogCount,
+                    'commentcount':commentCount}
+    return userdataInfo
 
 # Create your views here.
 
@@ -23,8 +46,6 @@ def content(request,blogId):
     blog = Blog.objects.get(id=blogId)
     title_key = generateKey(blogId,RedisKey['TITLEKEY'])
     readcount_key = generateKey(blogId,RedisKey['READCOUNTKEY'])
-
-
 
     if redis.exists(title_key):
         blog_title = redis.get(title_key).decode()
@@ -57,8 +78,13 @@ def content(request,blogId):
                    'content':blog_content,
                    'comment_list':comment,
                    'countOfThumb':countOfThumb,
-                   'thumbupflag':thumbflag
+                   'thumbupflag':thumbflag,
+                   'auther':blog.auther
                    }
+    userdataInfo = getUserDataInfo(blog.auther.username)
+    blogContent = {**blogContent,**userdataInfo}
+
+
     # blog.readcount+=1
     # blog.save()
     readblog_key = generateKey(currentusername, RedisKey['READBLOGKEY'])

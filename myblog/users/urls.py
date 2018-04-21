@@ -17,5 +17,6 @@ urlpatterns = [
     url(r'^userindex/(?P<username>.*)$',views.userIndex,name='userIndex'),
     url(r'^userinfo/(?P<username>.*)$',views.userinfo,name='userinfo'),
     url(r'^messagebox/$',views.messagebox,name='messagebox'),
-    url(r'^setreaded/$',views.setreaded,name='setreaded')
+    url(r'^setreaded/$',views.setreaded,name='setreaded'),
+    url(r'^follow/(?P<followusername>.*)$',views.follow,name='follow')
 ]

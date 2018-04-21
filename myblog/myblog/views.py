@@ -24,7 +24,6 @@ def index(request):
             request.session['username'] = str(uuid.uuid1())
     username = request.session['username']
     blogList = Blog.objects.filter(draft=False).order_by('title')
-    # 从redis中将每篇博客的阅读数回写到数据库中
     pool = ConnectionPool(host='localhost', port='6379', db=0)
     redis = StrictRedis(connection_pool=pool)
     searchform = searchForm()

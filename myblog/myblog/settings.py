@@ -135,5 +135,7 @@ RedisKey = {'TITLEKEY':'title',
             'UNREADMSGKEY':'unreadmsg',
             'THUMBUPKEY':'thumbup',
             'THUMBCOUNTKEY':'thumbupcount',
-            'READBLOGKEY':'readblog'
+            'READBLOGKEY':'readblog',
+            'FANSKEY':'fans',
+            'FOLLOWKEY':'follows'
             }

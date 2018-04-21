@@ -143,3 +143,29 @@ def setreaded(request):
     except Exception as e:
         pass
     return HttpResponseRedirect(reverse('users:messagebox'))
+
+# 关注与粉丝
+def follow(request,followusername):
+    try:
+        currentUser = Users.objects.get(username=request.session['username'])
+    except Users.DoesNotExist:
+        return HttpResponseRedirect(reverse('users:pleaselogin'))
+    except KeyError:
+        return HttpResponseRedirect(reverse('users:pleaselogin'))
+    currentUsername = request.session['username']
+    if currentUser:
+        followkey = generateKey(currentUsername,RedisKey['FOLLOWKEY'])
+        fanskey = generateKey(followusername,RedisKey['FANSKEY'])
+        pool = ConnectionPool(host='localhost', port='6379', db=0)
+        redis = StrictRedis(connection_pool=pool)
+        if redis.exists(followkey):
+            if redis.sismember(followkey,followusername):
+                return HttpResponse('hasfollow')
+            else:
+                redis.sadd(followkey,followusername)
+                redis.sadd(fanskey,currentUsername)
+        else:
+            redis.sadd(followkey, followusername)
+            redis.sadd(fanskey, currentUsername)
+        pool.disconnect()
+    return HttpResponse('follow')

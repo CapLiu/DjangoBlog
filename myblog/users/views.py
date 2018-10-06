@@ -13,19 +13,47 @@ from .models import InfoMessage
 from redis import StrictRedis,ConnectionPool
 from myblog.myutil import generateKey
 from myblog.settings import RedisKey
+from .models import UserProfile
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate,login,logout
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required,user_passes_test
+
+@receiver(post_save,sender=User)
+def createProfile(sender,created,instance,**kwargs):
+    if created:
+        profile = UserProfile(user=instance)
+        profile.save()
+
+def checksuperuser(user):
+    return user.is_superuser
 
 # Create your views here.
 
 
 def userregister(request):
     if request.method == 'POST':
-        form = UserRegisterForm(request.POST,request.FILES)
-        if form.is_valid():
-            form.save()
-            result_info = 'success'
-            return HttpResponseRedirect(reverse('users:registerResult', kwargs={'info': result_info}))
+         form = UserRegisterForm(request.POST,request.FILES)
+         if form.is_valid():
+             username = form.cleaned_data['username']
+             password = form.cleaned_data['password']
+             logoimage = form.cleaned_data['logoimage']
+             birthday = form.cleaned_data['birthday']
+             email = form.cleaned_data['email']
+             mobile = form.cleaned_data['mobilephone']
+             user = User.objects.create_user(username,'',password)
+             user.userprofile.logoimage = logoimage
+             user.userprofile.birthday = birthday
+             user.userprofile.mobilephone = mobile
+             user.userprofile.email = email
+             user.userprofile.save()
+             # form.save()
+             result_info = 'success'
+             return HttpResponseRedirect(reverse('users:registerResult', kwargs={'info': result_info}))
     else:
-        form = UserRegisterForm()
+         form = UserRegisterForm()
     return render(request,'users/userregister.html',{'form':form})
 
 
@@ -41,20 +69,25 @@ def userlogin(request):
     if request.method == 'POST':
         form = UserLoginForm(request.POST)
         if form.is_valid():
+            cookie_content = ''
+
             username = form.cleaned_data['username']
             password = form.cleaned_data['password']
             result_info = ''
             try:
-                user = Users.objects.get(username=username)
-                tmpPassword = user.password
-                if tmpPassword == password:
+                # user = Users.objects.get(username=username)
+                user = authenticate(username=username, password=password)
+                if user is not None:
+                    login(request, user)
                     result_info = 'success'
-                    request.session['username'] = username
                 else:
                     result_info = 'fail'
             except Exception as e:
-                result_info = 'fail'
-            return HttpResponseRedirect(reverse('users:loginResult', kwargs={'info': result_info}))
+                result_info = e
+                # result_info = e
+
+            response = HttpResponseRedirect(reverse('users:loginResult', kwargs={'info': result_info}))
+            return response
     else:
         form = UserLoginForm()
     return render(request, 'users/userlogin.html',{'form':form})
@@ -62,21 +95,20 @@ def userlogin(request):
 
 def loginResult(request,info):
     if info == 'success':
-        content = '登录成功！'
-        username = request.session['username']
         return HttpResponseRedirect(reverse('index'))
     else:
-        content = '用户名或密码错误！'
+        content = info # '用户名或密码错误！'
         return render(request,'users/loginResult.html',{'result_info':content})
 
 
 def userIndex(request,username):
     try:
-        user = Users.objects.get(username=username)
-        currentUser = Users.objects.get(username=request.session['username'])
-        blogList = Blog.objects.filter(auther=username).filter(draft=False)
+        # user = Users.objects.get(username=username)
+        user = User.objects.get(username=username)
+        currentUser = request.user
+        blogList = Blog.objects.filter(auther=user).filter(draft=False)
         content = {'username':username,
-                   'currentUser':currentUser,
+                   'curruser':currentUser,
                    'blogList':blogList
                    }
     except Exception as e:
@@ -86,16 +118,16 @@ def userIndex(request,username):
 
 def userinfo(request,username):
     try:
-        user = Users.objects.get(username=username)
-        currentUser = Users.objects.get(username=request.session['username'])
-        birthday = user.birthday
-        email = user.email
-        registertime = user.registertime
+        # user = Users.objects.get(username=username)
+        currentUser = request.user
+        birthday = currentUser.userprofile.birthday
+        email = currentUser.userprofile.email
+        registertime = currentUser.userprofile.registertime
         content = {'username':username,
                    'registertime':registertime,
                    'birthday':birthday,
                    'email':email,
-                   'currentUser':currentUser
+                   'curruser':currentUser
                    }
     except Exception as e:
         return render(request, 'users/pleaselogin.html')
@@ -103,17 +135,14 @@ def userinfo(request,username):
 
 
 def logoff(request):
-    try:
-        del request.session['username']
-    except KeyError:
-        pass
+    logout(request)
     return HttpResponseRedirect(reverse('index'))
 
 
 # messagebox
 def messagebox(request):
     try:
-        currentUser = Users.objects.get(username=request.session['username'])
+        currentUser = request.user
         pool = ConnectionPool(host='localhost', port='6379', db=0)
         redis = StrictRedis(connection_pool=pool)
         messagekey = generateKey(currentUser.username,RedisKey['UNREADMSGKEY'])
@@ -134,7 +163,7 @@ def messagebox(request):
 
 def setreaded(request):
     try:
-        currentUser = Users.objects.get(username=request.session['username'])
+        currentUser = request.user
         messagekey = generateKey(currentUser.username, RedisKey['UNREADMSGKEY'])
         pool = ConnectionPool(host='localhost', port='6379', db=0)
         redis = StrictRedis(connection_pool=pool)
@@ -147,12 +176,12 @@ def setreaded(request):
 # 关注与粉丝
 def follow(request,followusername):
     try:
-        currentUser = Users.objects.get(username=request.session['username'])
+        currentUser = request.user
     except Users.DoesNotExist:
         return HttpResponseRedirect(reverse('users:pleaselogin'))
     except KeyError:
         return HttpResponseRedirect(reverse('users:pleaselogin'))
-    currentUsername = request.session['username']
+    currentUsername = currentUser.username
     if currentUser:
         followkey = generateKey(currentUsername,RedisKey['FOLLOWKEY'])
         fanskey = generateKey(followusername,RedisKey['FANSKEY'])
@@ -160,7 +189,7 @@ def follow(request,followusername):
         redis = StrictRedis(connection_pool=pool)
         if redis.exists(followkey):
             if redis.sismember(followkey,followusername):
-                return HttpResponse('hasfollow')
+                return HttpResponseRedirect(reverse('blogs:content', kwargs={'blogId': request.session['currblogId']}))
             else:
                 redis.sadd(followkey,followusername)
                 redis.sadd(fanskey,currentUsername)
@@ -168,4 +197,27 @@ def follow(request,followusername):
             redis.sadd(followkey, followusername)
             redis.sadd(fanskey, currentUsername)
         pool.disconnect()
-    return HttpResponse('follow')
+    return HttpResponseRedirect(reverse('blogs:content',kwargs={'blogId':request.session['currblogId']}))
+
+# 新旧user迁移功能
+# 该功能仅供超级用户使用
+@login_required
+@user_passes_test(checksuperuser)
+def migrateuser(request):
+    oldusers = Users.objects.all()
+    for olduser in oldusers:
+        try:
+            newuser = User.objects.create_user(olduser.username,'',olduser.password)
+            newuser.userprofile.logoimage = olduser.logoimage
+            newuser.userprofile.birthday = olduser.birthday
+            newuser.userprofile.mobilephone = olduser.mobilephone
+            newuser.userprofile.email = olduser.email
+            newuser.userprofile.save()
+            # Users.delete(username=olduser.username)
+            result_info = 'success'
+        except ValidationError:
+            newuser = User.objects.get_by_natural_key(olduser.username)
+            newuser.set_password(olduser.password)
+        except Exception as e:
+            result_info = e
+    return render(request,'users/migrateuser.html',{'result_info':result_info})

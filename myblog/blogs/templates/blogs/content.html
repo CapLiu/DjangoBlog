@@ -1,8 +1,9 @@
 {% extends "blogTemplate.html" %}
+{% load blogfilter %}
 {% block content %}
 <div class="content">
 <h2>{{ blog_title }}</h2>
-{{ content|safe }}
+{{ content|script|safe }}
 </div>
 <p>
 {% if thumbupflag == "T" %}
@@ -18,11 +19,11 @@
 	{% for comment in comment_list %}
 		<ul class="comment">
 		<li>
-		{% if comment.auther.username == "anony" %}
+		{% if comment.auther.username == "" %}
 		<h4>匿名用户    {{ comment.createtime|date:"Y-m-d H:i:s" }}</h4>
 		{% else %}
                 {% if comment.auther.logoimage.url != null %}
-                <img src="{{ comment.auther.logoimage.url }}" width="64" height="64" />
+                <img src="{{ comment.auther.userprofile.logoimage.url }}" width="64" height="64" />
                 {% endif %}
 		<h4>{{ comment.auther.username }}    {{ comment.createtime|date:"Y-m-d H:i:s" }}</h4>
 		{% endif %}

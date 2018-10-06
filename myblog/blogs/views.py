@@ -11,9 +11,10 @@ from users.models import InfoMessage
 from redis import StrictRedis,ConnectionPool
 from myblog.myutil import generateKey
 from myblog.settings import RedisKey
+from django.contrib.auth.models import User
 
 def getUserDataInfo(username):
-    blogList =  Blog.objects.filter(auther=username).filter(draft=False)
+    blogList =  Blog.objects.filter(auther=User.objects.get(username=username)).filter(draft=False)
     followkey = generateKey(username, RedisKey['FOLLOWKEY'])
     fanskey = generateKey(username, RedisKey['FANSKEY'])
     followcount = 0
@@ -30,11 +31,17 @@ def getUserDataInfo(username):
     for blog in blogList:
         blogCount = blogCount + 1
         commentCount = commentCount + blog.commentcount
+    messagekey = generateKey(username, RedisKey['UNREADMSGKEY'])
+    if redis.exists(messagekey):
+        msgcount = redis.llen(messagekey)
+    else:
+        msgcount = 0
     pool.disconnect()
     userdataInfo = {'followcount':followcount,
                     'fanscount':fanscount,
                     'blogcount':blogCount,
-                    'commentcount':commentCount}
+                    'commentcount':commentCount,
+                    'msgcount':msgcount}
     return userdataInfo
 
 # Create your views here.
@@ -42,7 +49,7 @@ def getUserDataInfo(username):
 def content(request,blogId):
     pool = ConnectionPool(host='localhost',port='6379',db=0)
     redis = StrictRedis(connection_pool=pool,decode_responses=True)
-    currentusername = request.session['username']
+    currentusername = request.user.username
     blog = Blog.objects.get(id=blogId)
     title_key = generateKey(blogId,RedisKey['TITLEKEY'])
     readcount_key = generateKey(blogId,RedisKey['READCOUNTKEY'])
@@ -79,7 +86,8 @@ def content(request,blogId):
                    'comment_list':comment,
                    'countOfThumb':countOfThumb,
                    'thumbupflag':thumbflag,
-                   'auther':blog.auther
+                   'auther':blog.auther,
+                   'curruser':request.user
                    }
     userdataInfo = getUserDataInfo(blog.auther.username)
     blogContent = {**blogContent,**userdataInfo}
@@ -119,7 +127,7 @@ def content(request,blogId):
 #     blog_title = request.POST['blogtitle']
 #     blog_category = request.POST['category']
 #     blog_content = request.POST['blogcontent']
-#     auther = Users.objects.get(username=request.session['username'])
+#     auther = Users.objects.get(username=request.user.username)
 #     category = Category.objects.get(categoryname=blog_category)
 #     result_info = ''
 #     try:
@@ -140,9 +148,9 @@ def saveComment(request):
     blog = Blog.objects.get(pk=request.session['currblogId'])
     result_info = ''
     try:
-        auther = Users.objects.get(username=request.session['username'])
+        auther = User.objects.get(username=request.user.username)
     except:
-        auther = Users.objects.get(username='anony')
+        auther = User.objects.get(username='anony')
     try:
         mycomment = Comment.create(blog,comment_content,auther,datetime.datetime.now())
         blogId = request.session['currblogId']
@@ -193,7 +201,7 @@ def addBlog(request):
                 form = BlogForm(request.POST)
                 if form.is_valid():
                     newBlog = form.save(commit=False)
-                    newBlog.auther = Users.objects.get(username=request.session['username'])
+                    newBlog.auther = User.objects.get(username=request.user.username)
                     newBlog.draft = False
                     category = Category.objects.get(categoryname=newBlog.category.categoryname)
                     category.blogcount = category.blogcount+1
@@ -209,7 +217,7 @@ def addBlog(request):
             form = BlogForm(request.POST)
             if form.is_valid():
                 newBlog = form.save(commit=False)
-                newBlog.auther = Users.objects.get(username=request.session['username'])
+                newBlog.auther = User.objects.get(username=request.user.username)
                 newBlog.draft = False
                 category = Category.objects.get(categoryname=newBlog.category.categoryname)
                 category.blogcount = category.blogcount + 1
@@ -221,7 +229,7 @@ def addBlog(request):
                 del request.session['currentblogId']
         return HttpResponseRedirect(reverse('blogs:addblogResult', kwargs={'info': result_info}))
     else:
-        if request.session['username'] != 'anony':
+        if request.user.username != 'anony':
             form = BlogForm()
         else:
             return render(request, 'blogs/failedoperation.html')
@@ -254,7 +262,7 @@ def saveDraft(request):
                 form = BlogForm(request.POST)
                 if form.is_valid():
                     newBlog = form.save(commit=False)
-                    newBlog.auther = Users.objects.get(username=request.session['username'])
+                    newBlog.auther = Users.objects.get(username=request.user.username)
                     category = Category.objects.get(categoryname=newBlog.category)
                     category.blogcount = category.blogcount+1
                     category.save()
@@ -267,7 +275,7 @@ def saveDraft(request):
             form = BlogForm(request.POST)
             if form.is_valid():
                 newBlog = form.save(commit=False)
-                newBlog.auther = Users.objects.get(username=request.session['username'])
+                newBlog.auther = Users.objects.get(username=request.user.username)
                 category = Category.objects.get(categoryname=newBlog.category)
                 category.blogcount = category.blogcount + 1
                 category.save()
@@ -282,30 +290,32 @@ def saveDraft(request):
 
 
 def articlelist(request):
-    if request.session['username'] == 'anony':
+    if request.user.username == 'anony':
         return render(request, 'blogs/failedoperation.html')
     else:
-        blogList = Blog.objects.filter(auther=request.session['username'])
-    return render(request,'blogs/articleList.html',{'blogList':blogList})
+        blogList = Blog.objects.filter(auther=request.user)
+    return render(request,'blogs/articleList.html',{'blogList':blogList,
+                                                    'curruser':request.user})
 
 def blogmanage(request):
-    if request.session['username'] == 'anony':
+    if request.user.username == 'anony':
         return render(request, 'blogs/failedoperation.html')
     else:
-        blogList = Blog.objects.filter(auther=request.session['username'])
-    return render(request, 'blogs/blogmanage.html', {'blogList': blogList})
+        blogList = Blog.objects.filter(auther=request.user)
+    return render(request, 'blogs/blogmanage.html', {'blogList': blogList,
+                                                     'curruser': request.user})
 
 
 def deleteblog(request,blogId):
     blog = Blog.objects.get(id=blogId)
-    if blog.auther.username == request.session['username']:
+    if blog.auther.username == request.user.username:
         blog.delete()
         title_key = blogId + '_title'
         content_key = blogId + '_content'
         readcount_key = blogId + '_readcount'
         commentcount_key = blogId + '_commentcount'
         clearRedis([title_key, content_key, readcount_key,commentcount_key])
-        blogList = Blog.objects.filter(auther=request.session['username'])
+        blogList = Blog.objects.filter(auther=request.user.username)
     else:
         return render(request, 'blogs/failedoperation.html')
     return HttpResponseRedirect(reverse('blogs:blogmanage'))
@@ -316,7 +326,7 @@ def editblog(request,blogId):
     request.session['currentblogId'] = blogId
     form = BlogForm()
     blogContent = {}
-    if tmpBlog.auther.username == request.session['username']:
+    if tmpBlog.auther.username == request.user.username:
         blogContent = {
             'title':tmpBlog.title,
             'category':tmpBlog.category,
@@ -330,17 +340,18 @@ def editblog(request,blogId):
 
 
 def commentmanage(request):
-    blogList = Blog.objects.filter(auther=request.session['username'])
+    blogList = Blog.objects.filter(auther=request.user)
     commentList = []
     for blog in blogList:
         commentList.append(Comment.objects.filter(attachedblog=blog))
-    return render(request,'blogs/commentmanage.html',{'commentList':commentList})
+    return render(request,'blogs/commentmanage.html',{'commentList':commentList,
+                                                      'curruser': request.user})
 
 
 def deletecomment(request,commentId):
     comment = Comment.objects.get(id=commentId)
     attachedBlog = comment.attachedblog
-    if attachedBlog.auther.username == request.session['username']:
+    if attachedBlog.auther.username == request.user.username:
         comment.delete()
         attachedBlog.commentcount -= 1
         attachedBlog.save()
@@ -350,13 +361,14 @@ def deletecomment(request,commentId):
 
 
 def draftmanage(request):
-    blogList = Blog.objects.filter(auther=request.session['username']).filter(draft=True)
-    return render(request, 'blogs/draftmanage.html', {'blogList': blogList})
+    blogList = Blog.objects.filter(auther=request.user).filter(draft=True)
+    return render(request, 'blogs/draftmanage.html', {'blogList': blogList,
+                                                      'curruser': request.user})
 
 # 点赞功能
 def thumbup(request):
     try:
-        currentUser = Users.objects.get(username=request.session['username'])
+        currentUser = request.user
     except KeyError:
         return render(request,'users/pleaselogin.html')
     except Users.DoesNotExist:

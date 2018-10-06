@@ -17,4 +17,4 @@ uwsgi_param  SERVER_PORT        $server_port;
 uwsgi_param  SERVER_NAME        $server_name;
 
 uwsgi_param UWSGI_SCRIPT myblog.wsgi;
-uwsgi_param UWSGI_CHDIR /home/liu/djangotest/myblog;
+uwsgi_param UWSGI_CHDIR /home/dsliu/DjangoBlog/myblog;

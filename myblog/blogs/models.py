@@ -3,6 +3,8 @@ from django.db import models
 from users.models import Users
 from ckeditor_uploader.fields import RichTextUploadingField
 from django.utils import timezone
+from django.contrib.auth.models import User
+from django.conf import settings
 
 # Create your models here.
 class Category(models.Model):
@@ -15,7 +17,7 @@ class Category(models.Model):
 
 class Blog(models.Model):
     title = models.CharField(max_length=32,verbose_name=u'标题')
-    auther = models.ForeignKey(Users,default='',on_delete=models.CASCADE)
+    auther = models.ForeignKey(User,default='',on_delete=models.CASCADE)
     category = models.ForeignKey(Category,null=True,on_delete=models.CASCADE)
     content = RichTextUploadingField(verbose_name=u'内容')
     createdate = models.DateTimeField('Create time',default=timezone.now())
@@ -37,7 +39,7 @@ class Blog(models.Model):
 class Comment(models.Model):
     attachedblog = models.ForeignKey(Blog,on_delete=models.CASCADE)
     content = models.TextField()
-    auther = models.ForeignKey(Users,default='',on_delete=models.CASCADE)
+    auther = models.ForeignKey(User,default='',on_delete=models.CASCADE)
     createtime = models.DateTimeField('Comment Create time')
 
     @classmethod

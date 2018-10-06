@@ -9,20 +9,17 @@ from redis import StrictRedis,ConnectionPool
 from .myutil import generateKey
 from .settings import RedisKey
 import uuid
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User,AnonymousUser
+from django.contrib.auth import get_user
+
 
 def index(request):
-    try:
-        username = request.session['username']
-        user = Users.objects.get(username=username)
-    except KeyError:
-        user = Users.objects.get(username='anony')
-        if 'username' not in request.session:
-            request.session['username'] = str(uuid.uuid1())
-    except Users.DoesNotExist:
-        user = Users.objects.get(username='anony')
-        if request.session['username'] == '':
-            request.session['username'] = str(uuid.uuid1())
-    username = request.session['username']
+    if request.user.is_authenticated:
+        user = request.user
+    else:
+        user = get_user(request)
+    username = request.user.username
     blogList = Blog.objects.filter(draft=False).order_by('title')
     pool = ConnectionPool(host='localhost', port='6379', db=0)
     redis = StrictRedis(connection_pool=pool)

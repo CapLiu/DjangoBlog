@@ -2,6 +2,8 @@
 from django.db import models
 import datetime
 from django.utils import timezone
+from django.contrib.auth.models import User
+
 import PIL
 # Create your models here.
 class Users(models.Model):
@@ -23,6 +25,16 @@ class Users(models.Model):
 
     def __unicode__(self):
         return self.username
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User,on_delete=models.CASCADE)
+    logoimage = models.ImageField(upload_to='logoimages', null=True, blank=True, verbose_name=u'头像')
+    # new field
+    birthday = models.DateTimeField(null=True, blank=True, verbose_name=u'生日')
+    email = models.CharField(max_length=255, null=True, blank=True, verbose_name=u'电子邮件')
+    mobilephone = models.CharField(max_length=11, null=True, blank=True, verbose_name=u'手机号码')
+    # new field end
+    registertime = models.DateTimeField(default=timezone.now())
 
 
 class InfoMessage(models.Model):

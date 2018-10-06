@@ -1,0 +1,10 @@
+{% extends "userTemplate.html" %}
+{% block content %}
+<div>
+{% if "{{ result_info }}" == "success" %}
+<h3>迁移用户成功，所有旧用户已迁移到新模型！</h3>
+{% else %}
+<h3>{{ result_info }}</h3>
+{% endif %}
+</div>
+{% endblock %}

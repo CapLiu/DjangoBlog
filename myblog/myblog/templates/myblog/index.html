@@ -1,53 +1,20 @@
 {% extends "parentTemplate.html" %}
-
-{% block introduce %}
-{% if curruser.username  != "anony" or  curruser.username  != "" %}
-<div>
-{% if curruser.logoimage %}
-<img src="{{ curruser.logoimage.url }}" width="64" height="64" />
-{% endif %}
-</div>
-<a href="{% url 'users:userIndex' curruser.username %}">{{ curruser.username }}</a>
-{% endif %}
-{% endblock %}
-{% block nav %}
-<a href="{% url 'index' %}">首页</a>
-{% if curruser.username  == "anony" or curruser.username  == "" %}
-<a href="{% url 'users:userregister' %}">用户注册</a>
-<a href="{% url 'users:userlogin' %}">用户登录</a>
-{% else %}
-用户：{{ curruser.username }}
-<a href="{% url 'users:messagebox' %}">
-{% if  msgcount  != 0 %}
-<strong>消息({{ msgcount }})</strong>
-{% else %}
-消息({{ msgcount }})
-</a>
-{% endif %}
-<a href="{% url 'users:logoff' %}">退出登录</a>
-<a href="{% url 'blogs:addblog' %}">写博文</a>
-{% endif %}
-{% endblock %}
 {% block content %}
-<div class="list">
-<form action="{% url 'searchResult' %}" method="get" >
-{{ searchform }}
-<input type="submit" value="搜索">
-</form>
+<div class="container">
 {% if blog_list %}
-	<ul>
 	{% for blog in blog_list %}
-		<div class="articlelist">
+                <dt>
 		<a href="{% url 'blogs:content' blog.id %}">{{ blog.title }}</a>-<a href="{% url 'users:userIndex' blog.auther.username %}">{{ blog.auther.username }}</a>
-		<div class="articlelistinfo">
+                </dt>
+		<dd>
 		<span title="阅读次数">阅读 {{ blog.readcount }}</span>
 		<span title="创建时间">{{ blog.createdate|date:"Y-m-d H:i:s" }}</span>
-		</div>
-		</div>
+                </dd>
 	{% endfor %}
-	</ul>
 {% else %}
 	<p>No blogs</p>
 {% endif %}
 </div>
 {% endblock %}
+
+

@@ -12,6 +12,19 @@ from redis import StrictRedis,ConnectionPool
 from myblog.myutil import generateKey
 from myblog.settings import RedisKey
 from django.contrib.auth.models import User
+from haystack.forms import SearchForm
+
+from blogsearchengine.engine import searchengine
+from django.db.models.signals import post_save
+from django.dispatch.dispatcher import receiver
+
+@receiver(post_save,sender=Blog)
+def updateIndex(sender,**kwargs):
+    engine = searchengine(Blog,'content',indexname='myblogindex')
+    engine.updateindex()
+
+
+
 
 def getUserDataInfo(username):
     blogList =  Blog.objects.filter(auther=User.objects.get(username=username)).filter(draft=False)
@@ -233,7 +246,7 @@ def addBlog(request):
             form = BlogForm()
         else:
             return render(request, 'blogs/failedoperation.html')
-    return render(request, 'blogs/addblog.html', {'form':form})
+    return render(request, 'blogs/addblog.html', context={'form':form})
 
 
 def addBlogResult(request,info):
@@ -399,5 +412,6 @@ def thumbup(request):
 
     pool.disconnect()
     return HttpResponseRedirect(reverse('blogs:content', kwargs={'blogId': request.session['currblogId']}))
+
 
 

@@ -2,6 +2,7 @@ from django.conf.urls import url
 from . import views
 from django.conf.urls import include
 from users import urls as userurls
+import haystack.urls
 
 
 
@@ -21,6 +22,5 @@ urlpatterns = [
     url(r'^commentmanage$',views.commentmanage,name='commentmanage'),
     url(r'^deletecomment/(?P<commentId>.*)$',views.deletecomment,name='deleteComment'),
     url(r'^draftmanage$',views.draftmanage,name='draftmanage'),
-
 
 ]

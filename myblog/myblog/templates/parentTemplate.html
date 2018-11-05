@@ -30,27 +30,29 @@
 <b class="nav-link">Cap_Liu的博客</b>
 <a class="nav-item nav-link text-white bg-dark" href="{% url 'index' %}">首页</a>
 {% if curruser.username  == "" %}
-<a class="nav-item nav-link text-white bg-dark" href="{% url 'users:userregister' %}">用户注册</a>
-<a class="nav-item nav-link text-white bg-dark" href="{% url 'users:userlogin' %}">用户登录</a>
+    <a class="nav-item nav-link text-white bg-dark" href="{% url 'users:userregister' %}">用户注册</a>
+    <a class="nav-item nav-link text-white bg-dark" href="{% url 'users:userlogin' %}">用户登录</a>
 {% else %}
 
-<a class="nav-item nav-link text-white bg-dark" href="{% url 'users:userIndex' curruser.username %}">
-{% if curruser.username != "" %}
-    {% if curruser.userprofile.logoimage %}
-        <img src="{{ curruser.userprofile.logoimage.url }}" height="32px"/>
+    <a class="nav-item nav-link text-white bg-dark" href="{% url 'users:userIndex' curruser.username %}">
+    {% if curruser.username != "" %}
+        {% if curruser.userprofile.logoimage %}
+            <img src="{{ curruser.userprofile.logoimage.url }}" height="32px"/>
+        {% endif %}
     {% endif %}
-{% endif %}
-用户：{{ curruser.username }}</a>
-<a class="nav-item nav-link text-white bg-dark" href="{% url 'users:messagebox' %}">
-{% if  msgcount  != 0 %}
-<strong>消息({{ msgcount }})</strong>
-{% else %}
-消息({{ msgcount }})
-</a>
-{% endif %}
+    用户：{{ curruser.username }}</a>
+    <a class="nav-item nav-link text-white bg-dark" href="{% url 'users:messagebox' %}">
+    {% if  msgcount  != 0 %}
+        <strong>消息({{ msgcount }})</strong>
+    {% else %}
+        消息({{ msgcount }})
+        </a>
+    {% endif %}
 <a class="nav-item nav-link text-white bg-dark" href="{% url 'users:logoff' %}">退出登录</a>
 <a class="nav-item nav-link text-white bg-dark" href="{% url 'blogs:addblog' %}">写博文</a>
 {% endif %}
+{% block othernavitem %}
+{% endblock %}
 </nav>
 {% block content %}
 {% endblock %}

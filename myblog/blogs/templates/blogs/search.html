@@ -1,0 +1,26 @@
+{% extends "blogTemplate.html" %}
+{% block othernavitem %}
+<form method="get" action="{% url 'haystack_search' %}">
+{{ searchform }}
+<input type="submit" value="搜索">
+</form>
+{% endblock %}
+{% load highlight %}
+{% block content %}
+<div class="content-wrap">
+
+{% for blog in page.object_list %}
+    <div>
+        <a href="{% url 'blogs:content' blog.object.id %}">
+            <h3>{% highlight blog.object.title with query %}</h3>
+        </a>
+        <div style="word-wrap: break-word">
+            {% highlight blog.object.content with query %}
+        </div>
+    </div>
+{% empty %}
+    <div class="no-post">没有搜索到相关内容，请重新搜索</div>
+{% endfor %}
+
+</div>
+{% endblock %}

@@ -1,4 +1,13 @@
 {% extends "parentTemplate.html" %}
+{% block othernavitem %}
+<form method="get" action="{% url 'blogSearch' %}">
+搜索:{{ searchform.searchKeyword }}
+{% for choice in searchform.searchrange %}
+<span>{{ choice }}</span>
+{% endfor %}
+<input type="submit" value="搜索">
+</form>
+{% endblock %}
 {% block content %}
 <div class="container">
 {% if blog_list %}
@@ -11,8 +20,13 @@
 		<span title="创建时间">{{ blog.createdate|date:"Y-m-d H:i:s" }}</span>
                 </dd>
 	{% endfor %}
-{% else %}
-	<p>No blogs</p>
+	{% if blog_list.has_previous %}
+	    <a href="?page={{ blog_list.previous_page_number }}">前一页</a>
+	{% endif %}
+	第{{ blog_list.number }}页
+	{% if blog_list.has_next %}
+	    <a href="?page={{ blog_list.next_page_number }}">下一页</a>
+	{% endif %}
 {% endif %}
 </div>
 {% endblock %}

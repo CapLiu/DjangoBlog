@@ -36,13 +36,32 @@ INSTALLED_APPS = [
     'ckeditor_uploader',
     'blogs.apps.BlogsConfig',
     'users.apps.UsersConfig',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # haystack
+    'haystack',
+    'blogsearchengine.apps.BlogsearchengineConfig',
+
 ]
+
+# haystack
+HAYSTACK_CONNECTIONS = {
+    'default': {
+        'ENGINE': 'haystack.backends.whoosh_backend.WhooshEngine',
+        'PATH': os.path.join(os.path.dirname(__file__), 'whoosh_index'),
+    },
+}
+HAYSTACK_SEARCH_RESULTS_PER_PAGE = 10
+HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
+
+SEARCHENGINE_MODELS = 'Blogs'
+SEARCHENGINE_UPDATE_FIELDS = 'content'
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

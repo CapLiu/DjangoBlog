@@ -1,0 +1,32 @@
+{% extends "parentTemplate.html" %}
+{% load highlight %}
+{% block othernavitem %}
+<form method="get" action="{% url 'blogSearch' %}">
+{{ searchform }}
+<input type="submit" value="搜索">
+</form>
+{% endblock %}
+{% load highlight %}
+{% block content %}
+<style>
+span.highlighted {
+        color: red;
+}
+</style>
+{% load highlight %}
+<div class="content-wrap">
+{% for blog in page.object_list %}
+    <div>
+        <a href="{% url 'blogs:content' blog.object.id %}">
+            {% highlight blog.object.title with query max_length 200 %}
+        </a>
+        <div>
+            {% highlight blog.object.content with query max_length 200 %}
+        </div>
+    </div>
+{% empty %}
+    <div class="no-post">没有搜索到相关内容，请重新搜索</div>
+{% endfor %}
+
+</div>
+{% endblock %}

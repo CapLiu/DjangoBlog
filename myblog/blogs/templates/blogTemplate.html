@@ -48,6 +48,8 @@
 <a class="nav-item nav-link text-white bg-dark" href="{% url 'users:logoff' %}">退出登录</a>
 <a class="nav-item nav-link text-white bg-dark" href="{% url 'blogs:addblog' %}">写博文</a>
 {% endif %}
+{% block othernavitem %}
+{% endblock %}
 </nav>
 {% block content %}
 {% endblock %}

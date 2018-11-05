@@ -17,16 +17,19 @@ from django.conf.urls import url
 from django.contrib import admin
 from django.conf.urls import include
 from . import views
+from .views import blogSearchView
 
 
 
 urlpatterns = [
     url(r'^$',views.index,name='index'),
-    url(r'^search/$',views.searchResult,name='searchResult'),
     url(r'^ckeditor/',include('ckeditor_uploader.urls')),
     url(r'^users/',include('users.urls')),
     url(r'^blogs/',include('blogs.urls')),
     url(r'^admin/', admin.site.urls),
+    #url(r'^search/', views.newsearchView,name='blogSearch'),
+    #url(r'^search/$',blogSearchView(),name='blogSearch')
+    url(r'^search/$',views.searchengineview,name='blogSearch')
 
 ]
 

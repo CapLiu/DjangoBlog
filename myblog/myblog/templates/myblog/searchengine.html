@@ -1,0 +1,27 @@
+{% extends "parentTemplate.html" %}
+{% load blogfilter %}
+{% block othernavitem %}
+<form method="get" action="{% url 'blogSearch' %}">
+搜索:{{ searchform.searchKeyword }}
+{% for choice in searchform.searchrange %}
+<span>{{ choice }}</span>
+{% endfor %}
+<input type="submit" value="搜索">
+</form>
+{% endblock %}
+{% block content %}
+<div class="content-wrap">
+{% for blog in searchResult %}
+    <div>
+        <h2><a href="{% url 'blogs:content' blog.id %}">
+            {{ blog.title }}
+        </a></h2>
+        {% for highresult in blog.highlight %}
+            {{ highresult.content|script|safe }}
+        {% endfor %}
+        
+    </div>
+{% endfor %}
+
+</div>
+{% endblock %}

@@ -11,11 +11,12 @@
 {% endblock %}
 {% block content %}
 <div class="content-wrap">
+<b>{{ correct.corrected }}</b>
 {% for blog in searchResult %}
     <div>
-        <h2><a href="{% url 'blogs:content' blog.id %}">
+        <h3><a href="{% url 'blogs:content' blog.id %}">
             {{ blog.title }}
-        </a></h2>
+        </a></h3>
         {% for highresult in blog.highlight %}
             {{ highresult.content|script|safe }}
         {% endfor %}

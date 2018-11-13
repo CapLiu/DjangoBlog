@@ -8,6 +8,4 @@ from django.conf import settings
 
 class BlogsearchengineConfig(AppConfig):
     name = 'blogsearchengine'
-    def ready(self):
-        pass
 

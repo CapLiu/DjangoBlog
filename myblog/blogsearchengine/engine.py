@@ -4,10 +4,7 @@ import django
 django.setup()
 
 from blogs.models import Blog
-import django.db.models.fields
 from django.db.models import *
-#from django.contrib.auth.models import User
-import whoosh.fields
 from whoosh.fields import *
 from whoosh.index import create_in,exists,exists_in
 from whoosh.filedb.filestore import FileStorage
@@ -18,6 +15,10 @@ import whoosh.highlight as highlight
 
 from django.utils.html import strip_tags
 from whoosh.qparser import MultifieldParser
+from whoosh.qparser import OrGroup
+
+
+
 class BlogFormatter(highlight.Formatter):
     def format_token(self, text, token, replace=False):
         tokentext = highlight.get_text(text,token,replace)
@@ -29,17 +30,20 @@ class BlogFormatter(highlight.Formatter):
 
 class searchengine:
 
-    def __init__(self, model, updatefield, indexpath = None, indexname = None):
+    def __init__(self, model, updatefield, indexpath = None, indexname = None,formatter = None):
         self.model = model
         self.indexpath = indexpath
         self.indexname = indexname
         self.updatefield = updatefield
         self.indexschema = {}
+        self.formatter = BlogFormatter
         # 建立index存放路径
         if self.indexpath is None:
             self.indexpath = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'engineindex/')
         if self.indexname is None:
             self.indexname = model.__name__
+        if formatter is not None:
+            self.formatter = formatter
         self.__buildSchema()
         self.__buildindex()
         
@@ -62,6 +66,7 @@ class searchengine:
                 self.indexschema[field.__str__().split('.')[-1]] = STORED()
             elif type(field) == RichTextUploadingField:
                 self.indexschema[field.__str__().split('.')[-1]] = TEXT(stored=True)
+        print(self.indexschema)
 
 
     def __buildindex(self):
@@ -100,9 +105,9 @@ class searchengine:
         print('enter __addonedoc')
         for key in self.indexschema:
             print('key in __addonedoc is %s' % key)
-            print(key.split('.')[-1])
-            if hasattr(obj,key.split('.')[-1]):
-                document_dic[key] = getattr(obj,key.split('.')[-1])
+            print(key)
+            if hasattr(obj,key):
+                document_dic[key] = getattr(obj,key)
         print(document_dic)
         writer.add_document(**document_dic)
 
@@ -118,22 +123,15 @@ class searchengine:
         with ix.searcher() as searcher:
             writer = AsyncWriter(ix)
             for indexfield in searcher.all_stored_fields():
-                #print(indexfield)
                 if len(indexfield) > 0:
                     indexId = indexfield['id']
                     print(indexId)
                     index_id.add(indexId)
-                    #print(index_id)
-                    #print(to_index_id)
                     # 数据库未找到此篇，则可能已被删除，故从index中删除此篇
                     if not self.model.objects.filter(id=indexId):
-                        print(indexId)
                         writer.delete_by_term('id', indexId.__str__())
-                        print('delete id is %s' % indexId)
-
                     for key in indexfield:
                         # 根据updatefield进行更新
-                        print(key)
                         if key == self.updatefield:
                             objfromdb = self.model.objects.get(id=indexId)
                             contentofobj = getattr(objfromdb,self.updatefield)
@@ -141,8 +139,6 @@ class searchengine:
                                 writer.delete_by_term('id',indexId.__str__())
                                 to_index_id.add(indexId)
                                 print('update id is %s, title is %s' % (indexId,objfromdb.title))
-            print(index_id)
-            print(to_index_id)
             for obj in objlist:
                 if obj.id in to_index_id or obj.id not in index_id:
                     self.__addonedoc(writer,obj.id)
@@ -153,19 +149,25 @@ class searchengine:
     def __handleUpdate(self, sender, instance, **kwargs):
         self.updateindex()
 
-    def search(self,searchfield,searchkeyword):
+    def search(self,searchfield,searchkeyword,ignoretypo = False):
         storage = FileStorage(self.indexpath)
         ix = storage.open_index(indexname=self.indexname)
         if isinstance(searchfield,str):
-            qp = QueryParser(searchfield,schema=self.indexschema)
+            qp = QueryParser(searchfield, schema=self.indexschema, group=OrGroup)
         elif isinstance(searchfield,list):
-            qp = MultifieldParser(searchfield,schema=self.indexschema)
+            qp = MultifieldParser(searchfield, schema=self.indexschema)
         q = qp.parse(searchkeyword)
         resultobjlist = []
+        corrected_dict = {}
         hi = highlight.Highlighter()
         with ix.searcher() as searcher:
+            corrected = searcher.correct_query(q,searchkeyword)
+            if corrected.query != q and ignoretypo == False:
+                q = qp.parse(corrected.string)
+                corrected_dict = {'corrected': u'您要找的是不是' + corrected.string}
             results = searcher.search(q,limit=None)
-            results.formatter = BlogFormatter()
+            #results.formatter = BlogFormatter()
+            results.formatter = self.formatter()
             for result in results:
                 obj_dict = {}
                 highlightresults = []
@@ -177,13 +179,14 @@ class searchengine:
                     for _field in searchfield:
                         highlightresults.append({_field:'<' + result.highlights(_field) + '>'})
                 obj_dict['highlight'] = highlightresults
+
                 print(obj_dict['highlight'])
-                extradata = extradata()
-                if len(extradata) > 0:
-                    obj_dict.update(**extradata)
+                extradata_dic = self.extradata()
+                if len(extradata_dic) > 0:
+                    obj_dict.update(**extradata_dic)
                 resultobjlist.append(obj_dict)
         storage.close()
-        return resultobjlist
+        return resultobjlist,corrected_dict
 
     def extradata(self):
         # 提供用户自定义数据

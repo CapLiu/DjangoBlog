@@ -18,6 +18,8 @@ from django.contrib import admin
 from django.conf.urls import include
 from . import views
 from .views import blogSearchView
+from blogsearchengine.views import baseSearchView
+from blogs.models import Blog
 
 
 
@@ -30,6 +32,11 @@ urlpatterns = [
     #url(r'^search/', views.newsearchView,name='blogSearch'),
     #url(r'^search/$',blogSearchView(),name='blogSearch')
     url(r'^search/$',views.searchengineview,name='blogSearch')
+    #url(r'^search/$',baseSearchView.as_view(modelname=Blog,
+    #                                        searchfield='content',
+    #                                        updatefield='content',
+    #                                        templatename='myblog/searchengine.html',
+    #                                        indexname='myblogindex'),name='blogSearch')
 
 ]
 

@@ -106,18 +106,20 @@ def searchengineview(request):
         keycode = request.GET['searchKeyword']
         engine = searchengine(Blog, 'content', indexname='myblogindex')
         option = request.GET['searchrange']
+        correct_dict = {}
         if option == '1':
-            searchresult = engine.search('title',keycode)
+            searchresult,correct_dict = engine.search('title',keycode)
         elif option == '2':
-            searchresult = engine.search('content', keycode)
+            searchresult,correct_dict = engine.search('content', keycode)
         else:
-            searchresult = engine.search(['title','content'],keycode)
+            searchresult,correct_dict = engine.search(['title','content'],keycode)
 
         content = {
             'searchResult':searchresult,
             'curruser':user,
             'msgcount':getmsgcount(username),
             'searchform':searchForm,
+            'correct':correct_dict
         }
     else:
         content = {

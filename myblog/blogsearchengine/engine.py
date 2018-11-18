@@ -3,16 +3,18 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'myblog.settings'
 import django
 django.setup()
 
+
 from blogs.models import Blog
 from django.db.models import *
+
 from whoosh.fields import *
 from whoosh.index import create_in,exists,exists_in
 from whoosh.filedb.filestore import FileStorage
 from ckeditor_uploader.fields import RichTextUploadingField
 from whoosh.writing import AsyncWriter
-from whoosh.qparser import QueryParser
-import whoosh.highlight as highlight
 
+import whoosh.highlight as highlight
+from whoosh.qparser import QueryParser
 from django.utils.html import strip_tags
 from whoosh.qparser import MultifieldParser
 from whoosh.qparser import OrGroup
@@ -30,13 +32,14 @@ class BlogFormatter(highlight.Formatter):
 
 class searchengine:
 
-    def __init__(self, model, updatefield, indexpath = None, indexname = None,formatter = None):
+    def __init__(self, model, updatefield, indexpath = None, indexname = None,formatter = None,advancemode=True):
         self.model = model
         self.indexpath = indexpath
         self.indexname = indexname
         self.updatefield = updatefield
         self.indexschema = {}
         self.formatter = BlogFormatter
+        self.advancemode = advancemode
         # 建立index存放路径
         if self.indexpath is None:
             self.indexpath = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'engineindex/')
@@ -66,7 +69,34 @@ class searchengine:
                 self.indexschema[field.__str__().split('.')[-1]] = STORED()
             elif type(field) == RichTextUploadingField:
                 self.indexschema[field.__str__().split('.')[-1]] = TEXT(stored=True)
+            elif type(field) == ForeignKey and self.advancemode == True:
+                subschema = self.__buildModelSchema(field.related_model)
+                self.indexschema.update(**subschema)
         print(self.indexschema)
+
+    def __buildModelSchema(self,dedicatedmodel):
+        modelschema = {}
+        modelfields = dedicatedmodel._meta.get_fields()
+        for field in modelfields:
+            if type(field) == CharField:
+                modelschema[dedicatedmodel.__name__ + '_' + field.__str__().split('.')[-1]] = TEXT(stored=True)
+            elif type(field) == IntegerField:
+                modelschema[dedicatedmodel.__name__ + '_' + field.__str__().split('.')[-1]] = NUMERIC(stored=True,numtype=int)
+            elif type(field) == FloatField:
+                modelschema[dedicatedmodel.__name__ + '_' + field.__str__().split('.')[-1]] = NUMERIC(stored=True,numtype=float)
+            elif type(field) == DateField or type(field) == DateTimeField:
+                modelschema[dedicatedmodel.__name__ + '_' + field.__str__().split('.')[-1]] = DATETIME(stored=True)
+            elif type(field) == BooleanField:
+                modelschema[dedicatedmodel.__name__ + '_' + field.__str__().split('.')[-1]] = BOOLEAN(stored=True)
+            elif type(field) == AutoField:
+                modelschema[dedicatedmodel.__name__ + '_' + field.__str__().split('.')[-1]] = STORED()
+            elif type(field) == RichTextUploadingField:
+                modelschema[dedicatedmodel.__name__ + '_' + field.__str__().split('.')[-1]] = TEXT(stored=True)
+            elif type(field) == ForeignKey:
+                subschema = self.__buildModelSchema(field.related_model)
+                modelschema.update(**subschema)
+        return modelschema
+
 
 
     def __buildindex(self):
@@ -92,6 +122,21 @@ class searchengine:
                     if hasattr(obj,key):
                         # print(key,getattr(obj,key.split('.')[-1]))
                         document_dic[key] = getattr(obj,key)
+                    else:
+                        if self.advancemode:
+                            # 该key属于外键
+                            foreignmodel = key.split('_')[0]
+                            foreignkey = key[key.find('_')+1:]
+                            for field in self.model._meta.get_fields():
+                                if type(field) == ForeignKey:
+                                    if field.related_model.__name__ == foreignmodel:
+                                        print(field.__str__().split('.')[-1])
+                                        foreignobj = getattr(obj,field.__str__().split('.')[-1])
+                                        if hasattr(foreignobj,foreignkey):
+                                            print(key)
+                                            document_dic[key] = getattr(foreignobj,foreignkey)
+
+
                 writer.add_document(**document_dic)
                 document_dic.clear()
             writer.commit()
@@ -108,6 +153,19 @@ class searchengine:
             print(key)
             if hasattr(obj,key):
                 document_dic[key] = getattr(obj,key)
+            else:
+                if self.advancemode:
+                    # 该key属于外键
+                    foreignmodel = key.split('_')[0]
+                    foreignkey = key[key.find('_') + 1:]
+                    for field in self.model._meta.get_fields():
+                        if type(field) == ForeignKey:
+                            if field.related_model.__name__ == foreignmodel:
+                                print(field.__str__().split('.')[-1])
+                                foreignobj = getattr(obj, field.__str__().split('.')[-1])
+                                if hasattr(foreignobj, foreignkey):
+                                    print(key)
+                                    document_dic[key] = getattr(foreignobj, foreignkey)
         print(document_dic)
         writer.add_document(**document_dic)
 
@@ -129,14 +187,14 @@ class searchengine:
                     index_id.add(indexId)
                     # 数据库未找到此篇，则可能已被删除，故从index中删除此篇
                     if not self.model.objects.filter(id=indexId):
-                        writer.delete_by_term('id', indexId.__str__())
+                        writer.delete_by_term('id', indexId)
                     for key in indexfield:
                         # 根据updatefield进行更新
                         if key == self.updatefield:
                             objfromdb = self.model.objects.get(id=indexId)
                             contentofobj = getattr(objfromdb,self.updatefield)
                             if contentofobj != indexfield[key]:
-                                writer.delete_by_term('id',indexId.__str__())
+                                writer.delete_by_term('id',indexId)
                                 to_index_id.add(indexId)
                                 print('update id is %s, title is %s' % (indexId,objfromdb.title))
             for obj in objlist:
@@ -149,9 +207,24 @@ class searchengine:
     def __handleUpdate(self, sender, instance, **kwargs):
         self.updateindex()
 
+    def __recreate_field(self,searchfield):
+        fields = self.model._meta.get_fields()
+        newsearchfields = []
+        for modelfield in fields:
+            if type(modelfield) == ForeignKey:
+                if isinstance(searchfield,str):
+                    newsearchfield = modelfield.related_model.__name__ + '_' + searchfield
+                    return newsearchfield
+                elif isinstance(searchfield,list):
+                    for eachsearchfield in searchfield:
+                        newsearchfields.append(eachsearchfield.related_model.__name__ + '_' + searchfield)
+                    return newsearchfields
+
     def search(self,searchfield,searchkeyword,ignoretypo = False):
         storage = FileStorage(self.indexpath)
         ix = storage.open_index(indexname=self.indexname)
+        if self.advancemode:
+            searchfield = self.__recreate_field(searchfield)
         if isinstance(searchfield,str):
             qp = QueryParser(searchfield, schema=self.indexschema, group=OrGroup)
         elif isinstance(searchfield,list):
@@ -159,7 +232,6 @@ class searchengine:
         q = qp.parse(searchkeyword)
         resultobjlist = []
         corrected_dict = {}
-        hi = highlight.Highlighter()
         with ix.searcher() as searcher:
             corrected = searcher.correct_query(q,searchkeyword)
             if corrected.query != q and ignoretypo == False:
@@ -168,6 +240,7 @@ class searchengine:
             results = searcher.search(q,limit=None)
             #results.formatter = BlogFormatter()
             results.formatter = self.formatter()
+            print(results)
             for result in results:
                 obj_dict = {}
                 highlightresults = []
@@ -198,5 +271,5 @@ class searchengine:
 if __name__ == '__main__':
     myengine = searchengine(Blog,'content',indexname='myblogindex')
     #resultlist = myengine.search(['title','content'],'test')
-    resultlist = myengine.search('content', 'test')
+    resultlist = myengine.search('username', 'tes')
     #print(resultlist)

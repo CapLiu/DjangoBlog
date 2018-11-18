@@ -31,12 +31,12 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     #url(r'^search/', views.newsearchView,name='blogSearch'),
     #url(r'^search/$',blogSearchView(),name='blogSearch')
-    url(r'^search/$',views.searchengineview,name='blogSearch')
-    #url(r'^search/$',baseSearchView.as_view(modelname=Blog,
-    #                                        searchfield='content',
-    #                                        updatefield='content',
-    #                                        templatename='myblog/searchengine.html',
-    #                                        indexname='myblogindex'),name='blogSearch')
+    #url(r'^search/$',views.searchengineview,name='blogSearch')
+    url(r'^search/$',baseSearchView.as_view(modelname=Blog,
+                                            searchfield='content',
+                                            updatefield='content',
+                                            templatename='myblog/normalsearchengine.html',
+                                            indexname='myblogindex'),name='blogSearch')
 
 ]
 

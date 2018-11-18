@@ -203,7 +203,6 @@ def addBlog(request):
         if 'currentblogId' in request.session:
             blogId = request.session['currentblogId']
             tmpBlog = Blog.objects.get(id=blogId)
-
             if tmpBlog:
                 form = BlogForm(request.POST,instance=tmpBlog)
                 tmpBlog = form.save(commit=False)

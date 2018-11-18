@@ -31,7 +31,7 @@ def index(request):
     username = request.user.username
     blogList = Blog.objects.filter(draft=False).order_by('title')
     # 引入分页机制
-    paginator = Paginator(blogList,10)
+    paginator = Paginator(blogList, 10)
     page = request.GET.get('page')
     try:
         blogs = paginator.page(page)

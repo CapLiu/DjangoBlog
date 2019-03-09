@@ -1,0 +1,44 @@
+{% extends "parentTemplate.html" %}
+{% load blogfilter %}
+{% load highlighttemplate %}
+{% block othernavitem %}
+<form method="get" action="{% url 'blogSearch' %}">
+搜索:{{ searchform.searchKeyword }}
+{% for choice in searchform.searchrange %}
+<span>{{ choice }}</span>
+{% endfor %}
+<input type="submit" value="搜索">
+</form>
+{% endblock %}
+{% block content %}
+<div class="content-wrap">
+共搜索到{{ resultcount }}条记录
+<b>{{ correct.corrected }}</b>
+{% for blog in searchResult %}
+    <div>
+        <h3><a href="{% url 'blogs:content' blog.id %}">
+            {{ blog.title }}
+        </a></h3>
+        {% for highresult in blog.highlight %}
+            {% highlightresult highresult font "<b>" %}
+        {% endfor %}
+    </div>
+{% endfor %}
+{% if searchResult.has_previous %}
+    {% if searchRange %}
+	    <a href="?searchKeyword={{ searchKeyword }}&amp;page={{ searchResult.previous_page_number }}&amp;{{ searchRange }}">前一页</a>
+	{% else %}
+	    <a href="?searchKeyword={{ searchKeyword }}&amp;page={{ searchResult.previous_page_number }}">前一页</a>
+	{% endif %}
+{% endif %}
+第{{ searchResult.number }}页
+{% if searchResult.has_next %}
+    {% if searchRange %}
+        <a href="?searchKeyword={{ searchKeyword }}&amp;page={{ searchResult.next_page_number }}&amp;{{ searchRange }}">下一页</a>
+    {% else %}
+	    <a href="?searchKeyword={{ searchKeyword }}&amp;page={{ searchResult.next_page_number }}">下一页</a>
+	{% endif %}
+{% endif %}
+
+</div>
+{% endblock %}

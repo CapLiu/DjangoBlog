@@ -72,7 +72,7 @@ class searchengine:
             elif type(field) == ForeignKey and self.advancemode == True:
                 subschema = self.__buildModelSchema(field.related_model)
                 self.indexschema.update(**subschema)
-        print(self.indexschema)
+        #print(self.indexschema)
 
     def __buildModelSchema(self,dedicatedmodel):
         modelschema = {}
@@ -187,16 +187,19 @@ class searchengine:
                     index_id.add(indexId)
                     # 数据库未找到此篇，则可能已被删除，故从index中删除此篇
                     if not self.model.objects.filter(id=indexId):
-                        writer.delete_by_term('id', indexId)
-                    for key in indexfield:
-                        # 根据updatefield进行更新
-                        if key == self.updatefield:
-                            objfromdb = self.model.objects.get(id=indexId)
-                            contentofobj = getattr(objfromdb,self.updatefield)
-                            if contentofobj != indexfield[key]:
-                                writer.delete_by_term('id',indexId)
-                                to_index_id.add(indexId)
-                                print('update id is %s, title is %s' % (indexId,objfromdb.title))
+                        print(indexId)
+                        writer.delete_by_term('id', str(indexId))
+                    else:
+                        for key in indexfield:
+                            # 根据updatefield进行更新
+                            if key == self.updatefield:
+                                print(indexId)
+                                objfromdb = self.model.objects.get(id=indexId)
+                                contentofobj = getattr(objfromdb,self.updatefield)
+                                if contentofobj != indexfield[key]:
+                                    writer.delete_by_term('id',str(indexId))
+                                    to_index_id.add(indexId)
+                                    print('update id is %s, title is %s' % (indexId,objfromdb.title))
             for obj in objlist:
                 if obj.id in to_index_id or obj.id not in index_id:
                     self.__addonedoc(writer,obj.id)
@@ -207,24 +210,46 @@ class searchengine:
     def __handleUpdate(self, sender, instance, **kwargs):
         self.updateindex()
 
+    def __get_modelname_fields(self,foreignmodel,sfield):
+        fields = foreignmodel._meta.get_fields()
+        found = False
+        for m_field in fields:
+            if m_field.__str__().split('.')[-1] == sfield:
+                return foreignmodel.__name__ + '_' + sfield
+        for m_field in fields:
+            if type(m_field) == ForeignKey:
+                return self.__get_modelname_fields(m_field.related_model,m_field)
+        if not found:
+            return sfield
+
     def __recreate_field(self,searchfield):
         fields = self.model._meta.get_fields()
-        newsearchfields = []
         for modelfield in fields:
-            if type(modelfield) == ForeignKey:
-                if isinstance(searchfield,str):
-                    newsearchfield = modelfield.related_model.__name__ + '_' + searchfield
-                    return newsearchfield
-                elif isinstance(searchfield,list):
-                    for eachsearchfield in searchfield:
-                        newsearchfields.append(eachsearchfield.related_model.__name__ + '_' + searchfield)
-                    return newsearchfields
+            if isinstance(searchfield,str):
+                if modelfield.__str__().split('.')[-1] == searchfield:
+                    print(modelfield.__str__())
+                    print('Non-foreign')
+                    return searchfield
+        print(searchfield)
+        for modelfield in fields:
+            if isinstance(searchfield,str):
+                if type(modelfield) == ForeignKey:
+                    print('Foreign')
+                    return self.__get_modelname_fields(modelfield.related_model,searchfield)
+        return searchfield
 
     def search(self,searchfield,searchkeyword,ignoretypo = False):
         storage = FileStorage(self.indexpath)
         ix = storage.open_index(indexname=self.indexname)
         if self.advancemode:
-            searchfield = self.__recreate_field(searchfield)
+            if isinstance(searchfield,str):
+                searchfield = self.__recreate_field(searchfield)
+            elif isinstance(searchfield,list):
+                newsearchfields = []
+                for s_field in searchfield:
+                    newsearchfields.append(self.__recreate_field(s_field))
+                searchfield = newsearchfields
+            print(searchfield)
         if isinstance(searchfield,str):
             qp = QueryParser(searchfield, schema=self.indexschema, group=OrGroup)
         elif isinstance(searchfield,list):
@@ -271,5 +296,6 @@ class searchengine:
 if __name__ == '__main__':
     myengine = searchengine(Blog,'content',indexname='myblogindex')
     #resultlist = myengine.search(['title','content'],'test')
-    resultlist = myengine.search('username', 'tes')
+    #resultlist = myengine.search(['con','username'], 'test')
+    myengine.updateindex()
     #print(resultlist)

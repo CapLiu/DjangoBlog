@@ -1,6 +1,6 @@
 # -*- coding=utf-8 -*-
 from django.db import models
-from users.models import Users
+#from users.models import Users
 from ckeditor_uploader.fields import RichTextUploadingField
 from django.utils import timezone
 from django.contrib.auth.models import User

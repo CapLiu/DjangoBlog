@@ -16,8 +16,10 @@
     <div>
         <h3><a href="{% url 'blogs:content' blog.id %}">
             {{ blog.title }}
+            
         </a></h3>
         {% for highresult in blog.highlight %}
+            {{ highresult.User_username|script|safe }}
             {{ highresult.content|script|safe }}
         {% endfor %}
         

@@ -20,7 +20,12 @@ from django.core.paginator import Paginator,EmptyPage,PageNotAnInteger
 
 # 使用searchengine进行搜索
 #from .indexForm import mysearchForm
-from blogsearchengine.searchForm import enginesearchForm
+#from blogsearchengine.searchForm import enginechoicesearchForm
+#from blogsearchengine.searchForm import enginebasesearchForm
+
+from esengine.searchForm import eschoicesearchForm
+
+from django import forms
 
 
 def index(request):
@@ -42,7 +47,11 @@ def index(request):
 
     pool = ConnectionPool(host='localhost', port='6379', db=0)
     redis = StrictRedis(connection_pool=pool)
-    searchform = enginesearchForm()
+    kwargs = {}
+    kwargs['searchlist'] = [{'title': u'标题'}, {'content': u'正文'}]
+    kwargs['multichoice'] = True
+    # searchform = enginechoicesearchForm(**kwargs)
+    searchform = eschoicesearchForm(**kwargs)
     # get all unread message count by redis
     messagekey = generateKey(username,RedisKey['UNREADMSGKEY'])
     if redis.exists(messagekey):
@@ -101,7 +110,9 @@ def searchengineview(request):
     else:
         user = get_user(request)
     username = request.user.username
-    searchForm = enginesearchForm()
+    kwargs = {}
+    kwargs['searchlist'] = [u'标题',u'全文',u'用户']
+    searchForm = enginechoicesearchForm(**kwargs)
     if request.method == 'GET':
         keycode = request.GET['searchKeyword']
         engine = searchengine(Blog, 'content', indexname='myblogindex')
@@ -112,7 +123,7 @@ def searchengineview(request):
         elif option == '2':
             searchresult,correct_dict = engine.search('content', keycode)
         else:
-            searchresult,correct_dict = engine.search(['title','content'],keycode)
+            searchresult,correct_dict = engine.search('username',keycode)
 
         content = {
             'searchResult':searchresult,

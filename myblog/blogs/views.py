@@ -1,7 +1,7 @@
 # -*- coding=utf-8 -*-
 from django.shortcuts import render
 from django.http import HttpResponse,HttpResponseRedirect
-from .models import Blog,Comment,Category,Users
+from .models import Blog,Comment,Category
 from django.urls import reverse
 from django.core.exceptions import ValidationError
 import datetime
@@ -15,14 +15,20 @@ from django.contrib.auth.models import User
 from haystack.forms import SearchForm
 
 from blogsearchengine.engine import searchengine
+from esengine.esenginecore import esengine
 from django.db.models.signals import post_save
 from django.dispatch.dispatcher import receiver
 
-@receiver(post_save,sender=Blog)
-def updateIndex(sender,**kwargs):
-    engine = searchengine(Blog,'content',indexname='myblogindex')
-    engine.updateindex()
 
+#@receiver(post_save,sender=Blog)
+#def updateIndex(sender,**kwargs):
+#    engine = searchengine(Blog,'content',indexname='myblogindex')
+#    engine.updateindex()
+# updateIndex(self,indexname, doctype, model, updatefield):
+@receiver(post_save,sender=Blog)
+def updateEsIndex(sender,**kwargs):
+    es = esengine('blog','blog_content',Blog)
+    es.updateIndex('blog','blog_content',Blog,'content')
 
 
 
@@ -327,7 +333,7 @@ def deleteblog(request,blogId):
         readcount_key = blogId + '_readcount'
         commentcount_key = blogId + '_commentcount'
         clearRedis([title_key, content_key, readcount_key,commentcount_key])
-        blogList = Blog.objects.filter(auther=request.user.username)
+        blogList = Blog.objects.filter(auther=request.user)
     else:
         return render(request, 'blogs/failedoperation.html')
     return HttpResponseRedirect(reverse('blogs:blogmanage'))

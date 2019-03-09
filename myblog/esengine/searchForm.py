@@ -1,26 +1,28 @@
 # -*- coding=utf-8 -*-
 from django import forms
 
-class enginebasesearchForm(forms.Form):
+class esbasesearchForm(forms.Form):
     searchKeyword = forms.CharField(label=u'搜索',max_length=40)
     def __init__(self,*args,**kwargs):
-        super(enginebasesearchForm,self).__init__(*args,**kwargs)
+        super(esbasesearchForm,self).__init__(*args,**kwargs)
 
-class enginechoicesearchForm(forms.Form):
+class eschoicesearchForm(forms.Form):
     def __init__(self,*args,**kwargs):
         self.searchfields = {}
         searchlist = kwargs.pop('searchlist', False)
+        multichoice = kwargs.pop('multichoice',False)
         self.CHOICES = self.__buildSearchrange(searchlist)
-        super(enginechoicesearchForm, self).__init__(*args, **kwargs)
-        self.fields['searchrange'] = forms.ChoiceField(label='',widget=forms.RadioSelect,choices=self.CHOICES,initial=1)
+        super(eschoicesearchForm, self).__init__(*args, **kwargs)
+        if multichoice:
+            self.fields['searchrange'] = forms.MultipleChoiceField(label='',widget=forms.CheckboxSelectMultiple,choices=self.CHOICES,initial=1)
+        else:
+            self.fields['searchrange'] = forms.ChoiceField(label='', widget=forms.RadioSelect, choices=self.CHOICES,initial=1)
         self.fields['searchKeyword'] = forms.CharField(label=u'搜索',max_length=40)
         # searchlist should be below style:
         # [{title:u'标题'},{content:u'全文'},{username:u'用户'},...,{xx:u'xx']
         # [u'aa',u'bb',u'cc']
 
-
     def __buildSearchrange(self,searchlist):
-        print(searchlist)
         searchrange = []
         i = 1
         for choice in searchlist:

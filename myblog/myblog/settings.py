@@ -32,6 +32,7 @@ ALLOWED_HOSTS = ['*'] #Debug=True set
 
 
 INSTALLED_APPS = [
+    #'esengine.apps.EsengineConfig',
     'ckeditor',
     'ckeditor_uploader',
     'blogs.apps.BlogsConfig',
@@ -46,6 +47,7 @@ INSTALLED_APPS = [
     # haystack
     'haystack',
     'blogsearchengine.apps.BlogsearchengineConfig',
+    'esengine.apps.EsengineConfig',
 
 ]
 

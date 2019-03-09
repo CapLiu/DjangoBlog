@@ -18,8 +18,9 @@ from django.contrib import admin
 from django.conf.urls import include
 from . import views
 from .views import blogSearchView
-from blogsearchengine.views import baseSearchView
+from blogsearchengine.views import baseSearchView,choiceSearchView
 from blogs.models import Blog
+from esengine.views import esbaseSearchView,esChoiceSearchView
 
 
 
@@ -32,11 +33,20 @@ urlpatterns = [
     #url(r'^search/', views.newsearchView,name='blogSearch'),
     #url(r'^search/$',blogSearchView(),name='blogSearch')
     #url(r'^search/$',views.searchengineview,name='blogSearch')
-    url(r'^search/$',baseSearchView.as_view(modelname=Blog,
-                                            searchfield='content',
-                                            updatefield='content',
-                                            templatename='myblog/normalsearchengine.html',
-                                            indexname='myblogindex'),name='blogSearch')
+    #url(r'^search/$',choiceSearchView(modelname=Blog,
+    #                                        searchfield=[{'content':u'全文'},{'title':u'标题'}],
+    #                                        updatefield='content',
+    #                                        templatename='myblog/normalsearchengine.html',
+    #                                        indexname='myblogindex',resultsperpage=3),name='blogSearch')
+    url(r'^search/$',esChoiceSearchView(indexname='blog',
+                                      doctype='blog_content',
+                                      model=Blog,
+                                      searchfield='content',
+                                      updatefield='content',
+                                      templatename='myblog/essearch.html',
+                                      multichoice=True,
+                                        resultsperpage=3
+                                      ),name='blogSearch')
 
 ]
 

@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.views import View
 from esengine.searchForm import esbasesearchForm
 from esengine.searchForm import eschoicesearchForm
+from esengine.searchForm import esadvancesearchForm
 from esengine.esenginecore import esengine
 from django.core.paginator import Paginator,EmptyPage,PageNotAnInteger
 # Create your views here.
@@ -53,6 +54,57 @@ class esbaseSearchView(View):
                    'searchform':self.form,
                    'searchKeyword':self.keyword
                    }
+        content.update(**self.extradata())
+        return render(self.request,self.templatename,content)
+
+    def extradata(self):
+        return {}
+
+
+class esAdvanceSearchView(View):
+
+    def __init__(self,indexname,doctype,model,searchfield,updatefield,templatename,includelist,excludelist,resultsperpage = 10):
+        self.indexname = indexname
+        self.doctype = doctype
+        self.model = model
+        self.searchfield = searchfield
+        self.updatefield = updatefield
+        self.templatename = templatename
+        self.keyword = ''
+        self.includelist = includelist
+        self.excludelist = excludelist
+        self.resultsperpage = resultsperpage
+
+    def buildform(self,request):
+        kwargs = {}
+        #kwargs['includelist'] = [{'title':u'标题'},{'content':u'正文'}]
+        #kwargs['excludelist'] = [{'title': u'标题'}, {'content': u'正文'}]
+        kwargs['includelist'] = self.includelist
+        kwargs['excludelist'] = self.excludelist
+        self.form = esadvancesearchForm(request.GET,**kwargs)
+
+    def __call__(self, request):
+        self.request = request
+        return self.create_response()
+
+
+    def buildpage(self,request,results):
+        # 引入分页机制
+        paginator = Paginator(results, self.resultsperpage)
+        page = request.GET.get('page')
+        try:
+            searchresult = paginator.page(page)
+        except PageNotAnInteger:
+            searchresult = paginator.page(1)
+        except EmptyPage:
+            searchresult = paginator.page(paginator.num_pages)
+        return searchresult
+
+    def create_response(self):
+        self.buildform(self.request)
+        content = {
+            'searchform':self.form
+        }
         content.update(**self.extradata())
         return render(self.request,self.templatename,content)
 

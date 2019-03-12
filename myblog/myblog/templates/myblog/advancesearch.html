@@ -2,16 +2,22 @@
 {% load blogfilter %}
 {% load highlighttemplate %}
 {% block othernavitem %}
-<form method="get" action="{% url 'blogSearch' %}">
-搜索:{{ searchform.searchKeyword }}
-{% for choice in searchform.searchrange %}
-<span>{{ choice }}</span>
-{% endfor %}
-<input type="submit" value="搜索">
-</form>
-<a href="{% url 'advanceSearch' %}">高级搜索</a>
+
 {% endblock %}
 {% block content %}
+<form method="get" action="{% url 'blogSearch' %}">
+<p>包含以下关键字，以逗号分割：{{ searchform.includeKeyword }}</p>
+{% for choice in searchform.includerange %}
+<span>{{ choice }}</span>
+{% endfor %}
+<p>排除以下关键字，以逗号分割：{{ searchform.excludeKeyword }}</p>
+{% for choice in searchform.excluderange %}
+<span>{{ choice }}</span>
+{% endfor %}
+<p>从{{ searchform.startdate }}</p>
+<p>到{{ searchform.enddate }}</p>
+<input type="submit" value="搜索">
+</form>
 <div class="content-wrap">
 共搜索到{{ resultcount }}条记录
 <b>{{ correct.corrected }}</b>

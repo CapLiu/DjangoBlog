@@ -20,7 +20,7 @@ from . import views
 from .views import blogSearchView
 from blogsearchengine.views import baseSearchView,choiceSearchView
 from blogs.models import Blog
-from esengine.views import esbaseSearchView,esChoiceSearchView
+from esengine.views import esbaseSearchView,esChoiceSearchView,esAdvanceSearchView
 
 
 
@@ -46,7 +46,17 @@ urlpatterns = [
                                       templatename='myblog/essearch.html',
                                       multichoice=True,
                                         resultsperpage=3
-                                      ),name='blogSearch')
+                                      ),name='blogSearch'),
+    url(r'^advanceSearch/$', esAdvanceSearchView(indexname='blog',
+                                         doctype='blog_content',
+                                         model=Blog,
+                                         searchfield='content',
+                                         updatefield='content',
+                                         templatename='myblog/advancesearch.html',
+                                         includelist=[{'title':u'标题'},{'content':u'正文'}],
+                                         excludelist=[{'title':u'标题'},{'content':u'正文'}],
+                                         resultsperpage=3
+                                         ), name='advanceSearch')
 
 ]
 

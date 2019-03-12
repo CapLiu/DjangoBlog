@@ -138,7 +138,7 @@ class esengine:
             res = self.es.search(indexname,doctype,body=querybody)
             totalcount,result = self.__parseresult(res,searchfield)
             if totalcount == 0:
-                querybody = self.__buildPrefixQueryBody(searchfield,keyword)
+                querybody = self.__buildSingleQueryBody(searchfield,keyword,matchmethod='match_phrase_prefix')
                 res = self.es.search(indexname,doctype,body=querybody)
                 totalcount,result = self.__parseresult(res,searchfield)
             return totalcount,result
@@ -153,12 +153,12 @@ class esengine:
                 tmpresult = []
                 result_ids = set()
                 for field in searchfield:
-                    querybody = self.__buildPrefixQueryBody(field, keyword)
+                    querybody = self.__buildSingleQueryBody(field, keyword,matchmethod='match_phrase_prefix')
                     res = self.es.search(indexname, doctype, body=querybody)
                     eachcount,eachresult = self.__parseresult(res, field)
                     totalcount += eachcount
                     result += eachresult
-
+                # 去重
                 for singleresult in result:
                     result_ids.add(singleresult['id'])
 
@@ -184,6 +184,17 @@ class esengine:
         body = json.loads(querystr)
         return body
 
+    def advancesearch(self,indexname,doctype,includefields,includekeywords,excludefields,excludekeywords,datefield,startdate,enddate):
+        querybody = self.__buildAdvanceQueryBody(includefields,
+                                                 includekeywords,
+                                                 excludefields,
+                                                 excludekeywords,
+                                                 datefield,
+                                                 startdate,
+                                                 enddate)
+        res = self.es.search(indexname, doctype, body=querybody)
+        print(res)
+
     def createSuggester(self,suggestername,searchfield,keyword):
         suggesterstr = '"%s" : {' \
                        '"text" : "%s",' \
@@ -194,7 +205,7 @@ class esengine:
         return suggesterstr
 
     def test(self):
-        self.createSuggester('testsuggester','content','alert')
+        self.advancesearch('blog','blog_content',['title'],'test',['readcount'],'0','createdate','2018-01-27','2019-03-01')
 
     def __buildMultiQueryBody(self,searchfield,keyword):
         if type(searchfield) == list:
@@ -213,18 +224,39 @@ class esengine:
             body = json.loads(querystr)
             return body
 
-    def __buildPrefixQueryBody(self,searchfield,keyword):
-        body = ''
-        querystr = ''
-        if type(searchfield) == str:
-            querystr = '{"query":' \
-                       '{"match_phrase_prefix":' \
-                       '{"%s":"%s"' \
-                       '}' \
-                       '}' \
-                       '}' % (searchfield,keyword)
+    def __buildAdvanceQueryBody(self,includefields,includekeywords,excludefields,excludekeywords,datefield,startdate,enddate):
+        querystr = '{"query":{' \
+                   '"bool":{'
+        must_clause_header = '"must":[ %s ]'
+        must_not_clause_header = '"must_not":[ %s ]'
+        match_clause = '{ "match": { "%s":"%s" } }'
+        range_clause = '{ "range": { "%s" :{ "gte":"%s","lte":"%s" } } }'
+        includekeywordlist = includekeywords.split(',')
+        excludekeywordlist = excludekeywords.split(',')
+        total_include_match = ''
+        total_exclude_match = ''
+        for includefield in includefields:
+            for includekeyword in includekeywordlist:
+                if total_include_match != '':
+                    total_include_match += ','
+                tmp_match_clause = match_clause % (includefield,includekeyword)
+                total_include_match += tmp_match_clause
+
+        for excludefield in excludefields:
+            for excludekeyword in excludekeywordlist:
+                if total_exclude_match != '':
+                    total_exclude_match += ','
+                tmp_match_clause = match_clause % (excludefield,excludekeyword)
+                total_exclude_match += tmp_match_clause
+
+        range_clause_body = range_clause % (datefield, startdate, enddate)
+        total_include_match = total_include_match + ',' + range_clause_body
+        must_clause_body = must_clause_header % total_include_match
+        must_not_clause_body = must_not_clause_header % total_exclude_match
+        querystr = querystr + must_clause_body + ',' + must_not_clause_body +'}}}'
         print(querystr)
         body = json.loads(querystr)
+        print(body)
         return body
 
     def __parseresult(self, res,searchfield):
@@ -252,5 +284,5 @@ if __name__ == '__main__':
     #es.updateIndex('blog','blog_content',Blog,'content')
     #es.basicsearch('blog','blog_content','content','rea')
     #es.buildQueryBody('content','test')
-    #es.test()
-    es.multifieldsearch('blog', 'blog_content', ['content','title'], 'test')
+    es.test()
+    #es.multifieldsearch('blog', 'blog_content', ['content','title'], 'test')

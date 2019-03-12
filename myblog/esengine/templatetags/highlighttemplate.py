@@ -12,11 +12,9 @@ def highlightresult(parser,token):
         format_string_list = token.split_contents()
         tag_name = format_string_list[0]
         highlightcontent = format_string_list[1]
-        print(highlightcontent)
         format_string = format_string_list[2]+' '+format_string_list[3]
     except ValueError:
         raise template.TemplateSyntaxError("%r tag requires a single argument" % tag_name)
-    # format_string[1:-1] = result font "<b>"
     return SearchResultNode(highlightcontent,format_string)
 
 class SearchResultNode(template.Node):

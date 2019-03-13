@@ -2,10 +2,17 @@
 {% load blogfilter %}
 {% load highlighttemplate %}
 {% block othernavitem %}
-
+{% if simplesearchform %}
+<form method="get" action="{% url 'simpleSearch' %}">
+搜索:{{ simplesearchform.searchKeyword }}
+<input type="submit" value="搜索">
+<a href="{% url 'advanceSearch' %}">高级搜索</a>
+</form>
+{% endif %}
 {% endblock %}
 {% block content %}
-<form method="get" action="{% url 'blogSearch' %}">
+{% if searchform %}
+<form method="get" action="{% url 'advanceSearch' %}">
 <p>包含以下关键字，以逗号分割：{{ searchform.includeKeyword }}</p>
 {% for choice in searchform.includerange %}
 <span>{{ choice }}</span>
@@ -18,9 +25,9 @@
 <p>到{{ searchform.enddate }}</p>
 <input type="submit" value="搜索">
 </form>
+{% endif %}
 <div class="content-wrap">
 共搜索到{{ resultcount }}条记录
-<b>{{ correct.corrected }}</b>
 {% for blog in searchResult %}
     <div>
         <h3><a href="{% url 'blogs:content' blog.id %}">

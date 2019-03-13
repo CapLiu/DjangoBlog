@@ -192,8 +192,12 @@ class esengine:
                                                  datefield,
                                                  startdate,
                                                  enddate)
+        print(querybody)
         res = self.es.search(indexname, doctype, body=querybody)
         print(res)
+        totalcount, result = self.__parseresult(res, includefields)
+        print(result)
+        return totalcount,result
 
     def createSuggester(self,suggestername,searchfield,keyword):
         suggesterstr = '"%s" : {' \
@@ -205,7 +209,7 @@ class esengine:
         return suggesterstr
 
     def test(self):
-        self.advancesearch('blog','blog_content',['title'],'test',['readcount'],'0','createdate','2018-01-27','2019-03-01')
+        self.advancesearch('blog','blog_content',['title'],'test',['title'],'0','createdate','2018-01-27','2019-03-01')
 
     def __buildMultiQueryBody(self,searchfield,keyword):
         if type(searchfield) == list:
@@ -254,9 +258,7 @@ class esengine:
         must_clause_body = must_clause_header % total_include_match
         must_not_clause_body = must_not_clause_header % total_exclude_match
         querystr = querystr + must_clause_body + ',' + must_not_clause_body +'}}}'
-        print(querystr)
         body = json.loads(querystr)
-        print(body)
         return body
 
     def __parseresult(self, res,searchfield):

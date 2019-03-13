@@ -63,16 +63,15 @@ class esbaseSearchView(View):
 
 class esAdvanceSearchView(View):
 
-    def __init__(self,indexname,doctype,model,searchfield,updatefield,templatename,includelist,excludelist,resultsperpage = 10):
+    def __init__(self,indexname,doctype,model,templatename,includelist,excludelist,datefield,resultsperpage = 10):
         self.indexname = indexname
         self.doctype = doctype
         self.model = model
-        self.searchfield = searchfield
-        self.updatefield = updatefield
         self.templatename = templatename
         self.keyword = ''
         self.includelist = includelist
         self.excludelist = excludelist
+        self.datefield = datefield
         self.resultsperpage = resultsperpage
 
     def buildform(self,request):
@@ -82,11 +81,32 @@ class esAdvanceSearchView(View):
         kwargs['includelist'] = self.includelist
         kwargs['excludelist'] = self.excludelist
         self.form = esadvancesearchForm(request.GET,**kwargs)
+        self.simpleform = esbasesearchForm(request.GET)
 
     def __call__(self, request):
         self.request = request
         return self.create_response()
 
+    def search(self,request):
+        if self.form.is_valid():
+            engine = esengine(self.indexname, self.doctype, self.model)
+            includekeywords = self.form.cleaned_data['includeKeyword']
+            excludekeywords = self.form.cleaned_data['excludeKeyword']
+            startdate = self.form.cleaned_data['startdate']
+            enddate = self.form.cleaned_data['enddate']
+            includefields = []
+            excludefields = []
+            for searchrange in self.form.cleaned_data['includerange']:
+                includefields.append(self.form.searchfields[searchrange])
+            for searchrange in self.form.cleaned_data['excluderange']:
+                excludefields.append(self.form.searchfields[searchrange])
+            totalcount,result = engine.advancesearch(self.indexname,self.doctype,includefields,
+                                                     includekeywords,excludefields,excludekeywords,
+                                                     self.datefield,startdate,enddate)
+            print(result)
+            return totalcount,result
+        else:
+            return 0,{}
 
     def buildpage(self,request,results):
         # 引入分页机制
@@ -102,9 +122,20 @@ class esAdvanceSearchView(View):
 
     def create_response(self):
         self.buildform(self.request)
-        content = {
-            'searchform':self.form
-        }
+        resultcount, searchresults = self.search(self.request)
+        print(resultcount)
+        if resultcount>0:
+            page_result = self.buildpage(self.request, searchresults)
+            content = {
+                'simplesearchform':self.simpleform,
+                'resultcount': resultcount,
+                'searchResult': page_result
+            }
+        else:
+            page_result = searchresults
+            content = {
+                'searchform': self.form,
+            }
         content.update(**self.extradata())
         return render(self.request,self.templatename,content)
 
@@ -184,8 +215,6 @@ class esChoiceSearchView(View):
             searchrange = 'searchrange=%s' % singlerange
             total_searchrange += searchrange
         print(total_searchrange)
-
-
         page_result = self.buildpage(self.request,searchresults)
         content = {'resultcount':resultcount,
                    'searchResult':page_result,

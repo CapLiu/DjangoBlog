@@ -38,7 +38,13 @@ urlpatterns = [
     #                                        updatefield='content',
     #                                        templatename='myblog/normalsearchengine.html',
     #                                        indexname='myblogindex',resultsperpage=3),name='blogSearch')
-    url(r'^search/$',esChoiceSearchView(indexname='blog',
+    url(r'^simpleSearch/$',esbaseSearchView(indexname='blog',
+                                            doctype='blog_content',
+                                            model=Blog,
+                                            searchfield='content',
+                                            updatefield='content',
+                                            templatename='myblog/essearch.html'),name='simpleSearch'),
+    url(r'^choiceSearch/$',esChoiceSearchView(indexname='blog',
                                       doctype='blog_content',
                                       model=Blog,
                                       searchfield='content',
@@ -46,16 +52,15 @@ urlpatterns = [
                                       templatename='myblog/essearch.html',
                                       multichoice=True,
                                         resultsperpage=3
-                                      ),name='blogSearch'),
+                                      ),name='choiceSearch'),
     url(r'^advanceSearch/$', esAdvanceSearchView(indexname='blog',
                                          doctype='blog_content',
                                          model=Blog,
-                                         searchfield='content',
-                                         updatefield='content',
                                          templatename='myblog/advancesearch.html',
                                          includelist=[{'title':u'标题'},{'content':u'正文'}],
                                          excludelist=[{'title':u'标题'},{'content':u'正文'}],
-                                         resultsperpage=3
+                                         resultsperpage=3,
+                                         datefield='createdate'
                                          ), name='advanceSearch')
 
 ]

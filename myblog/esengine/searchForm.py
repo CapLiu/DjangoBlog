@@ -1,5 +1,6 @@
 # -*- coding=utf-8 -*-
 from django import forms
+import datetime
 
 class esbasesearchForm(forms.Form):
     searchKeyword = forms.CharField(label=u'搜索',max_length=40)
@@ -12,6 +13,9 @@ class esadvancesearchForm(forms.Form):
         self.searchfields = {}
         includelist = kwargs.pop('includelist',[])
         excludelist = kwargs.pop('excludelist',[])
+        startyear = kwargs.pop('startyear','1900')
+        endyear = kwargs.pop('endyear','2050')
+        yearrange = range(int(startyear),int(endyear))
         super(esadvancesearchForm, self).__init__(*args, **kwargs)
         self.includeChoice = self.__buildSearchrange(includelist)
         self.excludeChoice = self.__buildSearchrange(excludelist)
@@ -21,8 +25,8 @@ class esadvancesearchForm(forms.Form):
         self.fields['excludeKeyword'] = forms.CharField(label=u'排除以下关键词，以逗号分割',max_length=40)
         self.fields['excluderange'] = forms.MultipleChoiceField(label='',widget=forms.CheckboxSelectMultiple,
                                                                 choices=self.excludeChoice,initial=1)
-        self.fields['startdate'] = forms.DateField(label=u'起始时间',widget=forms.SelectDateWidget)
-        self.fields['enddate'] = forms.DateField(label=u'终止时间',widget=forms.SelectDateWidget)
+        self.fields['startdate'] = forms.DateField(label=u'起始时间',widget=forms.SelectDateWidget(years=yearrange))
+        self.fields['enddate'] = forms.DateField(label=u'终止时间',widget=forms.SelectDateWidget(years=yearrange))
 
     def __buildSearchrange(self,searchlist):
         searchrange = []

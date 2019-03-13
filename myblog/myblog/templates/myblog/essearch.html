@@ -2,14 +2,14 @@
 {% load blogfilter %}
 {% load highlighttemplate %}
 {% block othernavitem %}
-<form method="get" action="{% url 'blogSearch' %}">
+<form method="get" action="{% url 'simpleSearch' %}">
 搜索:{{ searchform.searchKeyword }}
 {% for choice in searchform.searchrange %}
 <span>{{ choice }}</span>
 {% endfor %}
 <input type="submit" value="搜索">
-</form>
 <a href="{% url 'advanceSearch' %}">高级搜索</a>
+</form>
 {% endblock %}
 {% block content %}
 <div class="content-wrap">

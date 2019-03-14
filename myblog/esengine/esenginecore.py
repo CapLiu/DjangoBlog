@@ -184,14 +184,15 @@ class esengine:
         body = json.loads(querystr)
         return body
 
-    def advancesearch(self,indexname,doctype,includefields,includekeywords,excludefields,excludekeywords,datefield,startdate,enddate):
+    def advancesearch(self,indexname,doctype,includefields,includekeywords,excludefields,excludekeywords,datefield,startdate,enddate,includemethod):
         querybody = self.__buildAdvanceQueryBody(includefields,
                                                  includekeywords,
                                                  excludefields,
                                                  excludekeywords,
                                                  datefield,
                                                  startdate,
-                                                 enddate)
+                                                 enddate,
+                                                 includemethod)
         print(querybody)
         res = self.es.search(indexname, doctype, body=querybody)
         print(res)
@@ -228,36 +229,54 @@ class esengine:
             body = json.loads(querystr)
             return body
 
-    def __buildAdvanceQueryBody(self,includefields,includekeywords,excludefields,excludekeywords,datefield,startdate,enddate):
+    def __buildAdvanceQueryBody(self,includefields,includekeywords,excludefields,excludekeywords,datefield,startdate,enddate,includemethod):
         querystr = '{"query":{' \
                    '"bool":{'
-        must_clause_header = '"must":[ %s ]'
+        if includemethod == '1':
+            must_clause_header = '"must":[ %s ]'
+        else:
+            must_clause_header = '"should":[ %s ]'
         must_not_clause_header = '"must_not":[ %s ]'
-        match_clause = '{ "match": { "%s":"%s" } }'
+        match_clause = '{ "prefix": { "%s":"%s" } }'
         range_clause = '{ "range": { "%s" :{ "gte":"%s","lte":"%s" } } }'
-        includekeywordlist = includekeywords.split(',')
-        excludekeywordlist = excludekeywords.split(',')
+        includekeywordlist = []
+        excludekeywordlist = []
+        if includekeywords != '':
+            includekeywordlist = includekeywords.split(',')
+        if excludekeywords != '':
+            excludekeywordlist = excludekeywords.split(',')
         total_include_match = ''
         total_exclude_match = ''
-        for includefield in includefields:
-            for includekeyword in includekeywordlist:
-                if total_include_match != '':
-                    total_include_match += ','
-                tmp_match_clause = match_clause % (includefield,includekeyword)
-                total_include_match += tmp_match_clause
-
-        for excludefield in excludefields:
-            for excludekeyword in excludekeywordlist:
-                if total_exclude_match != '':
-                    total_exclude_match += ','
-                tmp_match_clause = match_clause % (excludefield,excludekeyword)
-                total_exclude_match += tmp_match_clause
+        must_not_clause_body = ''
+        if len(includefields) > 0:
+            for includefield in includefields:
+                for includekeyword in includekeywordlist:
+                    if total_include_match != '':
+                        total_include_match += ','
+                    tmp_match_clause = match_clause % (includefield,includekeyword)
+                    total_include_match += tmp_match_clause
+        if len(excludefields) > 0:
+            for excludefield in excludefields:
+                for excludekeyword in excludekeywordlist:
+                    if total_exclude_match != '':
+                        total_exclude_match += ','
+                    tmp_match_clause = match_clause % (excludefield,excludekeyword)
+                    total_exclude_match += tmp_match_clause
 
         range_clause_body = range_clause % (datefield, startdate, enddate)
-        total_include_match = total_include_match + ',' + range_clause_body
+        if total_include_match == '':
+            total_include_match = range_clause_body
+        else:
+            total_include_match = total_include_match + ',' + range_clause_body
         must_clause_body = must_clause_header % total_include_match
-        must_not_clause_body = must_not_clause_header % total_exclude_match
-        querystr = querystr + must_clause_body + ',' + must_not_clause_body +'}}}'
+        if total_exclude_match != '':
+            must_not_clause_body = must_not_clause_header % total_exclude_match
+
+        if must_not_clause_body != '':
+            querystr = querystr + must_clause_body + ',' + must_not_clause_body +'}}}'
+        else:
+            querystr = querystr + must_clause_body + '}}}'
+        print(querystr)
         body = json.loads(querystr)
         return body
 

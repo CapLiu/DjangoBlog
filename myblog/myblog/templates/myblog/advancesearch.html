@@ -14,6 +14,9 @@
 {% if searchform %}
 <form method="get" action="{% url 'advanceSearch' %}">
 <p>包含以下关键字，以逗号分割：{{ searchform.includeKeyword }}</p>
+<p>{% for choice in searchform.includemethod %}
+<span> {{ choice }} </span>
+{% endfor %}</p>
 {% for choice in searchform.includerange %}
 <span>{{ choice }}</span>
 {% endfor %}
@@ -39,18 +42,14 @@
     </div>
 {% endfor %}
 {% if searchResult.has_previous %}
-    {% if searchRange %}
-	    <a href="?searchKeyword={{ searchKeyword }}&amp;page={{ searchResult.previous_page_number }}&amp;{{ searchRange }}">前一页</a>
-	{% else %}
-	    <a href="?searchKeyword={{ searchKeyword }}&amp;page={{ searchResult.previous_page_number }}">前一页</a>
+    {% if pageurl %}
+	    <a href="{{ pageurl }}&amp;page={{ searchResult.previous_page_number }}">前一页</a>
 	{% endif %}
 {% endif %}
 第{{ searchResult.number }}页
 {% if searchResult.has_next %}
-    {% if searchRange %}
-        <a href="?searchKeyword={{ searchKeyword }}&amp;page={{ searchResult.next_page_number }}&amp;{{ searchRange }}">下一页</a>
-    {% else %}
-	    <a href="?searchKeyword={{ searchKeyword }}&amp;page={{ searchResult.next_page_number }}">下一页</a>
+    {% if pageurl %}
+	    <a href="{{ pageurl }}&amp;page={{ searchResult.next_page_number }}">下一页</a>
 	{% endif %}
 {% endif %}
 

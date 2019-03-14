@@ -94,6 +94,8 @@ class esAdvanceSearchView(View):
             excludekeywords = self.form.cleaned_data['excludeKeyword']
             startdate = self.form.cleaned_data['startdate']
             enddate = self.form.cleaned_data['enddate']
+            includemethod = self.form.cleaned_data['includemethod']
+            print(includemethod)
             includefields = []
             excludefields = []
             for searchrange in self.form.cleaned_data['includerange']:
@@ -102,10 +104,11 @@ class esAdvanceSearchView(View):
                 excludefields.append(self.form.searchfields[searchrange])
             totalcount,result = engine.advancesearch(self.indexname,self.doctype,includefields,
                                                      includekeywords,excludefields,excludekeywords,
-                                                     self.datefield,startdate,enddate)
-            print(result)
+                                                     self.datefield,startdate,enddate,includemethod)
+            #print(result)
             return totalcount,result
         else:
+            #print('form is not valid')
             return 0,{}
 
     def buildpage(self,request,results):
@@ -123,14 +126,17 @@ class esAdvanceSearchView(View):
     def create_response(self):
         self.buildform(self.request)
         resultcount, searchresults = self.search(self.request)
-        print(resultcount)
         if resultcount>0:
             page_result = self.buildpage(self.request, searchresults)
+            full_path = self.request.get_full_path()
+            pageurl = full_path[full_path.index('?'):]
             content = {
                 'simplesearchform':self.simpleform,
                 'resultcount': resultcount,
-                'searchResult': page_result
+                'searchResult': page_result,
+                'pageurl':pageurl
             }
+
         else:
             page_result = searchresults
             content = {
